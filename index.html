@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eric Fadeyev | Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Reset and Global Styles */
+        :root {
+            --bg-color: #0A0A0A;
+            --text-color: #E5E4E2;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --font-family: 'Poppins', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-family);
+            overflow: hidden; /* Prevents scrollbars from background elements */
+        }
+
+        .main-container {
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            scroll-behavior: smooth;
+            scroll-padding-top: 1rem;
+        }
+
+        section {
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            scroll-snap-align: center;
+            overflow: hidden; /* Keeps content within section bounds */
+        }
+
+        h1, h2, h3 {
+            font-weight: 600;
+        }
+        
+        h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); }
+        h2 { font-size: clamp(2rem, 5vw, 3rem); text-align: center; margin-bottom: 2rem;}
+        h3 { font-size: clamp(1.2rem, 3vw, 1.5rem); margin-bottom: 1rem; }
+        p { font-size: clamp(1rem, 2.5vw, 1.2rem); max-width: 600px; text-align: center; line-height: 1.6; }
+
+        /* Liquid Silver & Lava Lamp Background Animation */
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .background-animation .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.7;
+            mix-blend-mode: lighten;
+            transition: opacity 0.5s;
+        }
+
+        .blob-1 {
+            width: 600px;
+            height: 600px;
+            top: -180px;
+            left: -180px;
+            background: radial-gradient(circle at 30% 30%, #909090 60%, #707070 100%);
+            animation: morph1 8s infinite alternate;
+        }
+
+        .blob-2 {
+            width: 700px;
+            height: 700px;
+            bottom: -220px;
+            right: -220px;
+            background: radial-gradient(circle at 70% 70%, #a0a0a0 50%, #606060 100%);
+            animation: morph2 10s infinite alternate-reverse;
+        }
+
+        .blob-3 {
+            width: 550px;
+            height: 550px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle at 50% 50%, #989898 40%, #808080 100%);
+            animation: morph3 9s infinite alternate;
+        }
+
+        @keyframes morph1 {
+            0% {
+                transform: translate(0, 0) scale(1) rotate(0deg);
+                border-radius: 40% 60% 60% 40% / 70% 30% 70% 30%;
+            }
+            40% {
+                transform: translate(80px, 120px) scale(1.15) rotate(20deg);
+            }
+            70% {
+                transform: translate(-60px, 80px) scale(1.05) rotate(-15deg);
+            }
+            100% {
+                transform: translate(-120px, -60px) scale(0.95) rotate(-10deg);
+                border-radius: 60% 40% 30% 70% / 60% 70% 30% 40%;
+            }
+        }
+
+        @keyframes morph2 {
+            0% {
+                transform: translate(0, 0) scale(1) rotate(0deg);
+                border-radius: 60% 40% 50% 50% / 50% 60% 40% 50%;
+            }
+            35% {
+                transform: translate(-100px, 100px) scale(1.1) rotate(15deg);
+            }
+            80% {
+                transform: translate(120px, -80px) scale(1.2) rotate(-20deg);
+            }
+            100% {
+                transform: translate(60px, 60px) scale(0.9) rotate(10deg);
+                border-radius: 50% 60% 60% 40% / 60% 50% 50% 40%;
+            }
+        }
+
+        @keyframes morph3 {
+            0% {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+            }
+            33% {
+                transform: translate(-40%, -60%) scale(1.1) rotate(15deg);
+                border-radius: 60% 40% 70% 30% / 50% 50% 50% 50%;
+            }
+            66% {
+                transform: translate(-60%, -40%) scale(0.95) rotate(-10deg);
+                border-radius: 40% 60% 30% 70% / 50% 50% 50% 50%;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1.05) rotate(5deg);
+                border-radius: 50% 50% 50% 50% / 60% 40% 60% 40%;
+            }
+        }
+
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px); /* Safari support */
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Desktop Navigation */
+        .desktop-nav {
+            position: fixed;
+            top: 50%;
+            right: 2rem;
+            transform: translateY(-50%);
+            z-index: 100;
+            padding: 1rem;
+        }
+        .desktop-nav ul {
+            list-style-type: none;
+        }
+        .desktop-nav li a {
+            display: block;
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 0.8rem 1.2rem;
+            margin: 0.5rem 0;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        .desktop-nav li a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            transition: left 0.4s ease-out;
+            z-index: -1;
+        }
+
+        .desktop-nav li a.active {
+            font-weight: 700;
+        }
+        
+        .desktop-nav li a.active::before {
+            left: 0;
+            animation: shimmer 2s infinite linear;
+        }
+
+        /* Mobile Navigation */
+        .mobile-nav-toggle {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 1001;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .hamburger-icon {
+            font-size: 2.5rem;
+            color: var(--text-color);
+        }
+        .mobile-nav-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .mobile-nav-overlay.show {
+            display: flex;
+        }
+        .mobile-nav-overlay ul {
+            list-style-type: none;
+            text-align: center;
+        }
+        .mobile-nav-overlay li a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 2rem;
+            padding: 1rem;
+            display: block;
+            transition: transform 0.2s ease;
+        }
+        .mobile-nav-overlay li a:hover {
+            transform: scale(1.1);
+        }
+
+        /* Content Sections */
+        /* Home Section */
+        #home h1 {
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        #home p {
+            font-weight: 300;
+        }
+
+        /* Projects Section */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            perspective: 1000px;
+        }
+        .project-card {
+            padding: 1.5rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+            transform: perspective(1000px);
+        }
+        .project-card:hover {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .project-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+            background-color: #333;
+            pointer-events: none;
+        }
+        .project-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            pointer-events: none;
+        }
+        .project-card p {
+            font-size: 0.9rem;
+            flex-grow: 1;
+            pointer-events: none;
+        }
+        .project-card button {
+            background: var(--glass-border);
+            color: var(--text-color);
+            border: 1px solid var(--glass-border);
+            padding: 0.7rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            font-family: var(--font-family);
+            pointer-events: none;
+        }
+        .project-card button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Skills Section */
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1000px;
+        }
+        .skill-category {
+            padding: 2rem;
+            flex: 1;
+            min-width: 280px;
+        }
+        .skill-category ul {
+            list-style-type: none;
+        }
+        .skill-category li {
+            padding: 0.5rem 0;
+        }
+
+        /* Contact Section */
+        #contact .glass-card {
+            padding: 3rem;
+            text-align: center;
+        }
+        #contact p {
+            margin-bottom: 1.5rem;
+        }
+        #contact a {
+            color: var(--text-color);
+            text-decoration: none;
+            border: 1px solid var(--glass-border);
+            padding: 0.8rem 2rem;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+        #contact a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Project Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1002;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-container {
+            width: 90vw;
+            height: 90vh;
+            max-width: 1000px;
+            max-height: 700px;
+            padding: 2rem;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.show .modal-container {
+            transform: scale(1);
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 2rem;
+            cursor: pointer;
+        }
+        .modal-content {
+            height: 100%;
+            overflow-y: auto;
+            padding-right: 1rem; /* for scrollbar */
+        }
+        .cancer-modal {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            height: 100%;
+        }
+        
+        .cancer-modal h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, var(--text-color), #909090);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .cancer-modal h3 {
+            font-size: 1.4rem;
+            margin: 1.5rem 0 1rem;
+            color: var(--text-color);
+            border-left: 3px solid var(--glass-border);
+            padding-left: 10px;
+        }
+
+        .cancer-modal-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .cancer-modal-header img {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .cancer-modal-header-content {
+            flex: 1;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .tech-tag {
+            background: var(--glass-border);
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .tech-tag:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .cancer-modal-section {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .key-concepts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .concept-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .concept-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .concept-card h4 {
+            font-size: 1.2rem;
+            margin-bottom: 0.8rem;
+            color: var(--text-color);
+            border-bottom: 2px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+        }
+
+        .concept-card p {
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #ccc;
+            text-align: left;
+        }
+
+        .results-section {
+            margin-top: 2rem;
+        }
+
+            .confusion-matrix {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 2px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .confusion-matrix:hover {
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .matrix-cell {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.8rem;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+
+        .matrix-header {
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.08);
+            color: #ddd;
+        }
+
+        .matrix-correct {
+            background: rgba(118, 184, 82, 0.15);
+        }
+
+        .matrix-cell:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+            z-index: 1;
+        }        .accuracy-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .metric-card h4 {
+            font-size: 1.1rem;
+            color: #ccc;
+            margin-bottom: 0.8rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0.8rem 0;
+            background: linear-gradient(90deg, #76b852, #8DC26F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .metric-card p {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 0.5rem;
+        }
+
+        .github-section {
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            background: var(--glass-border);
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .github-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* custom scrollbar for modal */
+        .modal-content::-webkit-scrollbar { width: 8px; }
+        .modal-content::-webkit-scrollbar-track { background: transparent; }
+        .modal-content::-webkit-scrollbar-thumb { background-color: var(--glass-border); border-radius: 20px; }
+
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .desktop-nav { display: none; }
+            .mobile-nav-toggle { display: block; }
+            section { padding: 1rem; }
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.8rem; margin-bottom: 1.5rem;}
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Animation Elements -->
+    <div class="background-animation">
+        <div class="blob blob-1 liquid-silver"></div>
+        <div class="blob blob-2 liquid-silver"></div>
+        <div class="blob blob-3 liquid-silver"></div>
+    </div>
+
+    <!-- Desktop Navigation -->
+    <nav class="desktop-nav glass-card">
+        <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#bio">Bio</a></li>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#skills">Skills</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+
+    <!-- Mobile Navigation -->
+    <button class="mobile-nav-toggle" aria-label="Open navigation menu">
+        <span class="hamburger-icon">&#9776;</span>
+    </button>
+    <div class="mobile-nav-overlay glass-card">
+        <nav>
+            <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#bio">Bio</a></li>
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="#skills">Skills</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Scrollable Container -->
+    <main class="main-container">
+        <!-- Home Section -->
+        <section id="home">
+            <h1>Eric Fadeyev</h1>
+            <p>Biomolecular Engineering & Bioinformatics</p>
+        </section>
+
+        <!-- Bio Section -->
+        <section id="bio">
+            <div class="glass-card" style="padding: 2rem 3rem; max-width: 800px;">
+              <h2>About Me</h2>
+              <p>
+                I am a passionate student at the University of California, Santa Cruz, pursuing a degree in Biomolecular Engineering and Bioinformatics. My work focuses on the intersection of computational biology, data science, and software engineering to solve complex biological problems. I have a strong foundation in algorithmic design, machine learning, and molecular biology techniques, and I'm always eager to learn and apply new technologies to advance scientific discovery.
+              </p>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects">
+            <h2>Projects</h2>
+            <div class="projects-grid">
+                <!-- Project 1: Carcinoma ML -->
+                <div class="project-card glass-card" 
+                     data-title="Machine Learning for Breast Cancer Subtype Classification" 
+                     data-desc="A data science project to classify breast cancer subtypes from TCGA gene expression data using a Random Forest model. This project demonstrates data cleaning, feature analysis, model training, and in-depth evaluation in a bioinformatics context."
+                     data-details='{
+                        "objective": "The goal of this project was to build a machine learning model capable of accurately predicting the molecular subtype of a breast cancer tumor (e.g., Luminal A, Luminal B, Basal, HER2-positive) using its gene expression profile. This is a crucial task in oncology as the subtype largely determines a patient`s prognosis and treatment path.",
+                        "tech": ["Python", "Scikit-learn", "Pandas", "Seaborn", "Google Colab"],
+                        "results": "The trained model achieved a final accuracy of 87.3% on the unseen test set, demonstrating a strong ability to distinguish between cancer subtypes based on gene expression patterns.",
+                        "repoLink": "https://github.com/arqitect/carcinoma_ml"
+                     }'>
+                    <img src="https://placehold.co/600x400/1a1a1a/e5e4e2?text=Cancer+Subtype+ML" alt="Breast Cancer Subtype Classification">
+                    <h2>Cancer Subtype ML</h2>
+                    <p>A Random Forest model to classify breast cancer subtypes from gene data.</p>
+                    <button class="open-modal-btn">Learn More</button>
+                </div>
+                <!-- Project 2 -->
+                <div class="project-card glass-card" data-title="Protein Folding Simulator" data-desc="A 3D simulation of protein folding using molecular dynamics principles, visualized with Three.js. This project explores heuristic algorithms to predict tertiary protein structures from primary amino acid sequences. The backend is powered by a C++ engine for performance-critical calculations.">
+                    <img src="https://placehold.co/600x400/1a1a1a/e5e4e2?text=Protein+Simulator" alt="Protein Folding Simulator">
+                    <h2>Protein Simulator</h2>
+                    <p>A 3D simulation exploring heuristic algorithms for protein folding.</p>
+                    <button class="open-modal-btn">Learn More</button>
+                </div>
+                <!-- Project 3 -->
+                <div class="project-card glass-card" data-title="Drug Discovery ML Model" data-desc="Developed a machine learning pipeline using TensorFlow and Scikit-learn to predict drug-target interactions. The model was trained on a large public database and achieved over 90% accuracy in identifying potential therapeutic candidates, demonstrating the power of AI in pharmacology.">
+                    <img src="https://placehold.co/600x400/1a1a1a/e5e4e2?text=ML+Drug+Discovery" alt="Drug Discovery ML Model">
+                    <h2>ML Drug Discovery</h2>
+                    <p>A machine learning pipeline to predict drug-target interactions.</p>
+                    <button class="open-modal-btn">Learn More</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skills Section -->
+        <section id="skills">
+            <h2>Skills</h2>
+            <div class="skills-container">
+                <div class="skill-category glass-card">
+                    <h3>Languages</h3>
+                    <ul>
+                        <li>Python</li>
+                        <li>Java</li>
+                        <li>C / C++</li>
+                        <li>R</li>
+                        <li>JavaScript / TypeScript</li>
+                        <li>SQL</li>
+                    </ul>
+                </div>
+                <div class="skill-category glass-card">
+                    <h3>Software & Tools</h3>
+                    <ul>
+                        <li>Git & GitHub</li>
+                        <li>Docker</li>
+                        <li>Jupyter Notebook</li>
+                        <li>BLAST, GATK</li>
+                        <li>TensorFlow, PyTorch</li>
+                        <li>AWS / GCP</li>
+                    </ul>
+                </div>
+                <div class="skill-category glass-card">
+                    <h3>Lab Techniques</h3>
+                    <ul>
+                        <li>PCR & qPCR</li>
+                        <li>CRISPR-Cas9</li>
+                        <li>DNA Sequencing (Sanger/NGS)</li>
+                        <li>Cell Culture</li>
+                        <li>Gel Electrophoresis</li>
+                        <li>Protein Purification</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section id="contact">
+            <div class="glass-card">
+                <h2>Get In Touch</h2>
+                <p>I'm currently seeking research and internship opportunities. Feel free to reach out!</p>
+                <a href="mailto:email@example.com">Contact Me</a>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Project Detail Modal -->
+    <div class="modal-overlay">
+        <div class="modal-container glass-card">
+            <button class="modal-close-btn">&times;</button>
+            <div id="modal-content-container" class="modal-content">
+                <!-- Dynamic content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- INTERSECTION OBSERVER FOR ACTIVE NAV LINK ---
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.desktop-nav a, .mobile-nav-overlay a');
+            const desktopNavLinks = document.querySelectorAll('.desktop-nav a');
+
+            const observerOptions = {
+                root: document.querySelector('.main-container'),
+                rootMargin: '0px',
+                threshold: 0.6 // Section is 60% in view
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        // Remove active class from all links
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            // Remove liquid silver from desktop nav links specifically
+                            if(link.parentElement.parentElement.parentElement.classList.contains('desktop-nav')){
+                                link.classList.remove('liquid-silver');
+                            }
+                        });
+
+                        // Add active class to the correct link
+                        const activeLink = document.querySelector(`nav a[href="#${id}"]`);
+                        if (activeLink) {
+                            activeLink.classList.add('active');
+                            // Add liquid silver class for the shimmer effect
+                            activeLink.classList.add('liquid-silver');
+                        }
+                        
+                        const mobileActiveLink = document.querySelector(`.mobile-nav-overlay a[href="#${id}"]`);
+                         if (mobileActiveLink) {
+                            mobileActiveLink.classList.add('active');
+                        }
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+            
+            // Set initial active link
+            const firstLink = document.querySelector('.desktop-nav a');
+            firstLink.classList.add('active', 'liquid-silver');
+
+
+            // --- MOBILE MENU FUNCTIONALITY ---
+            const mobileNavToggle = document.querySelector('.mobile-nav-toggle');
+            const mobileNavOverlay = document.querySelector('.mobile-nav-overlay');
+            const mobileNavLinks = document.querySelectorAll('.mobile-nav-overlay a');
+            const hamburgerIcon = document.querySelector('.hamburger-icon');
+
+            mobileNavToggle.addEventListener('click', () => {
+                mobileNavOverlay.classList.toggle('show');
+                hamburgerIcon.textContent = mobileNavOverlay.classList.contains('show') ? '×' : '☰';
+            });
+            
+            // Close mobile menu when a link is clicked
+            mobileNavLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileNavOverlay.classList.remove('show');
+                    hamburgerIcon.textContent = '☰';
+                });
+            });
+
+            // --- PROJECT CARD TILT EFFECT ---
+            const projectCards = document.querySelectorAll('.project-card');
+            
+            projectCards.forEach(card => {
+                card.addEventListener('mousemove', handleTilt);
+                card.addEventListener('mouseleave', resetTilt);
+                card.addEventListener('click', openModal);
+            });
+
+            function handleTilt(e) {
+                const card = e.currentTarget;
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const tiltX = ((y - centerY) / centerY) * -5;
+                const tiltY = ((x - centerX) / centerX) * 5;
+                
+                // Use requestAnimationFrame for smoother animation
+                requestAnimationFrame(() => {
+                    card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+                });
+            }
+
+            function resetTilt(e) {
+                const card = e.currentTarget;
+                card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0)';
+            }
+
+            // --- PROJECT MODAL FUNCTIONALITY ---
+            const modalOverlay = document.querySelector('.modal-overlay');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDesc = document.getElementById('modal-desc');
+            const closeModalBtn = document.querySelector('.modal-close-btn');
+
+            function openModal(e) {
+                e.stopPropagation(); // Prevent event bubbling
+                const card = e.currentTarget;
+                const title = card.dataset.title;
+                const desc = card.dataset.desc;
+                const details = JSON.parse(card.dataset.details || '{}');
+
+                // Only create enhanced content for the Cancer ML project
+                const content = title.includes("Cancer") ? `
+                    <div class="cancer-modal">
+                        <div class="cancer-modal-header">
+                            <img src="https://placehold.co/400x400/1a1a1a/e5e4e2?text=ML+Model" alt="Cancer Subtype Classification">
+                            <div class="cancer-modal-header-content">
+                                <h2>${title}</h2>
+                                <p>${desc}</p>
+                                <div class="tech-stack">
+                                    ${details.tech.map(tech => `<span class="tech-tag">${tech}</span>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overview-section">
+                            <h3>Key Concepts</h3>
+                            <div class="key-concepts">
+                                <div class="concept-card">
+                                    <h4>Gene Expression Profiling</h4>
+                                    <p>Analysis of mRNA expression levels for over 20,000 genes using RNA-Seq data from TCGA.</p>
+                                </div>
+                                <div class="concept-card">
+                                    <h4>Random Forest Classification</h4>
+                                    <p>Ensemble learning method using multiple decision trees to predict cancer subtypes.</p>
+                                </div>
+                                <div class="concept-card">
+                                    <h4>Feature Importance</h4>
+                                    <p>Identification of key genes that contribute most significantly to subtype prediction.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="results-section">
+                            <h3>Model Performance</h3>
+                            <div class="confusion-matrix">
+                                <div class="matrix-cell matrix-header">Predicted →</div>
+                                <div class="matrix-cell matrix-header">Luminal A</div>
+                                <div class="matrix-cell matrix-header">Luminal B</div>
+                                <div class="matrix-cell matrix-header">Basal</div>
+                                <div class="matrix-cell matrix-header">HER2+</div>
+                                
+                                <div class="matrix-cell matrix-header">Luminal A</div>
+                                <div class="matrix-cell matrix-correct">92%</div>
+                                <div class="matrix-cell">5%</div>
+                                <div class="matrix-cell">2%</div>
+                                <div class="matrix-cell">1%</div>
+
+                                <div class="matrix-cell matrix-header">Luminal B</div>
+                                <div class="matrix-cell">7%</div>
+                                <div class="matrix-cell matrix-correct">85%</div>
+                                <div class="matrix-cell">3%</div>
+                                <div class="matrix-cell">5%</div>
+
+                                <div class="matrix-cell matrix-header">Basal</div>
+                                <div class="matrix-cell">1%</div>
+                                <div class="matrix-cell">2%</div>
+                                <div class="matrix-cell matrix-correct">95%</div>
+                                <div class="matrix-cell">2%</div>
+
+                                <div class="matrix-cell matrix-header">HER2+</div>
+                                <div class="matrix-cell">3%</div>
+                                <div class="matrix-cell">6%</div>
+                                <div class="matrix-cell">4%</div>
+                                <div class="matrix-cell matrix-correct">87%</div>
+                            </div>
+
+                            <div class="accuracy-metrics">
+                                <div class="metric-card">
+                                    <h4>Overall Accuracy</h4>
+                                    <div class="metric-value">87.3%</div>
+                                    <p>Across all subtypes</p>
+                                </div>
+                                <div class="metric-card">
+                                    <h4>F1 Score</h4>
+                                    <div class="metric-value">0.86</div>
+                                    <p>Balanced accuracy measure</p>
+                                </div>
+                                <div class="metric-card">
+                                    <h4>Precision</h4>
+                                    <div class="metric-value">0.89</div>
+                                    <p>True positive rate</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="github-section">
+                            <a href="${details.repoLink}" target="_blank" class="github-link">
+                                <svg height="24" viewBox="0 0 16 16" width="24">
+                                    <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                                </svg>
+                                View Project on GitHub
+                            </a>
+                        </div>
+                    </div>
+                ` : `
+                    <h2>${title}</h2>
+                    <p>${desc}</p>
+                `;
+
+                const modalContent = document.getElementById('modal-content-container');
+                modalContent.innerHTML = content;
+                modalOverlay.classList.add('show');
+            };
+
+            const closeModal = () => {
+                modalOverlay.classList.remove('show');
+            };
+
+            closeModalBtn.addEventListener('click', closeModal);
+            
+            // Close modal by clicking on the overlay background
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay || e.target.classList.contains('modal-overlay')) {
+                    closeModal();
+                }
+            });
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modalOverlay.classList.contains('show')) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
