@@ -37,10 +37,10 @@
         .main-container {
             height: 100vh;
             overflow-y: scroll;
-            scroll-snap-type: y proximity;
+            scroll-snap-type: y mandatory;
             scroll-behavior: smooth;
-            scroll-padding: 2rem;
-            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scroll-padding: 1rem;
         }
 
         section {
@@ -48,13 +48,13 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start;
+            justify-content: center;
             align-items: center;
-            padding: 4rem 2rem;
+            padding: 2rem;
             position: relative;
-            scroll-snap-align: start;
+            scroll-snap-align: center;
             scroll-snap-stop: always;
-            overflow: visible;
+            overflow: hidden; /* Keeps content within section bounds */
         }
 
         h1, h2, h3 {
@@ -277,6 +277,26 @@
         }
         #home p {
             font-weight: 300;
+            margin-bottom: 2rem;
+        }
+
+        .scroll-indicator {
+            font-size: 1.5rem;
+            opacity: 0.7;
+            animation: bounce 2s infinite;
+            cursor: pointer;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
         }
 
         /* Projects Section */
@@ -660,35 +680,9 @@
         @media (max-width: 768px) {
             .desktop-nav { display: none; }
             .mobile-nav-toggle { display: block; }
-            section { 
-                padding: 3rem 1rem;
-                min-height: -webkit-fill-available; /* iOS height fix */
-            }
-            h1 { font-size: 2.5rem; }
+            section { padding: 1rem; }
+            h1 { font-size: 3rem; }
             h2 { font-size: 1.8rem; margin-bottom: 1.5rem;}
-            
-            /* Adjust blob sizes and positions for mobile */
-            .blob-1 {
-                width: 300px;
-                height: 300px;
-                top: -90px;
-                left: -90px;
-                opacity: 0.5;
-            }
-
-            .blob-2 {
-                width: 350px;
-                height: 350px;
-                bottom: -110px;
-                right: -110px;
-                opacity: 0.5;
-            }
-
-            .blob-3 {
-                width: 275px;
-                height: 275px;
-                opacity: 0.5;
-            }
 
             /* Modal Responsive Styles */
             .modal-container {
@@ -814,6 +808,7 @@
         <section id="home">
             <h1>Eric Fadeyev</h1>
             <p>Biomolecular Engineering & Bioinformatics</p>
+            <div class="scroll-indicator" onclick="document.querySelector('#bio').scrollIntoView({behavior: 'smooth'})">&#709;</div>
         </section>
 
         <!-- Bio Section -->
@@ -934,7 +929,7 @@
             const observerOptions = {
                 root: document.querySelector('.main-container'),
                 rootMargin: '0px',
-                threshold: 0.7 // Section is 70% in view for less sensitive scrolling
+                threshold: 0.5 // Section is 50% in view
             };
 
             const observer = new IntersectionObserver((entries, observer) => {
