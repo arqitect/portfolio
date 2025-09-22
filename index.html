@@ -85,6 +85,9 @@
             opacity: 0.5;
             mix-blend-mode: soft-light;
             transition: opacity 0.5s;
+            /* PERFORMANCE FIX: Hint to the browser that the transform property will be animated. */
+            /* This allows the browser to optimize by moving the element to its own layer. */
+            will-change: transform;
         }
 
         .blob-1 {
@@ -895,21 +898,22 @@
                         "results": "The trained model achieved a final accuracy of 87.3% on the unseen test set, demonstrating a strong ability to distinguish between cancer subtypes based on gene expression patterns.",
                         "repoLink": "https://github.com/arqitect/carcinoma_ml"
                      }'>
-                    <img src="/content/dna.png" alt="Breast Cancer Subtype Classification">
+                    <!-- PERFORMANCE FIX: Added loading="lazy" to defer image loading until it's needed. -->
+                    <img src="/content/dna.png" alt="Breast Cancer Subtype Classification" loading="lazy">
                     <h2>Cancer Subtype ML</h2>
                     <p>A Random Forest model to classify breast cancer subtypes from gene data.</p>
                     <button class="open-modal-btn">See the Results</button>
                 </div>
                 <!-- Project 2 -->
                 <div class="project-card glass-card" data-title="Protein Folding Simulator" data-desc="A 3D simulation of protein folding using molecular dynamics principles, visualized with Three.js. This project explores heuristic algorithms to predict tertiary protein structures from primary amino acid sequences. The backend is powered by a C++ engine for performance-critical calculations.">
-                    <img src="https://placehold.co/600x400/1a1a1a/e5e4e2?text=Protein+Simulator" alt="Protein Folding Simulator">
+                    <img src="https://placehold.co/600x400/1a1a1a/e5e4e2?text=Protein+Simulator" alt="Protein Folding Simulator" loading="lazy">
                     <h2>Protein Simulator</h2>
                     <p>A 3D simulation exploring heuristic algorithms for protein folding.</p>
                     <button class="open-modal-btn">Learn More</button>
                 </div>
                 <!-- Project 3 -->
                 <div class="project-card glass-card" data-title="Drug Discovery ML Model" data-desc="Developed a machine learning pipeline using TensorFlow and Scikit-learn to predict drug-target interactions. The model was trained on a large public database and achieved over 90% accuracy in identifying potential therapeutic candidates, demonstrating the power of AI in pharmacology.">
-                    <img src="https://placehold.co/600x400/1a1a1a/e5e4e2?text=ML+Drug+Discovery" alt="Drug Discovery ML Model">
+                    <img src="https://placehold.co/600x400/1a1a1a/e5e4e2?text=ML+Drug+Discovery" alt="Drug Discovery ML Model" loading="lazy">
                     <h2>ML Drug Discovery</h2>
                     <p>A machine learning pipeline to predict drug-target interactions.</p>
                     <button class="open-modal-btn">Learn More</button>
@@ -1003,6 +1007,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+
+            // --- SERVICE WORKER REGISTRATION ---
+            // We register the service worker to enable caching and offline functionality.
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                  .then(registration => {
+                    console.log('ServiceWorker registration successful!');
+                  })
+                  .catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                  });
+              });
+            }
 
             // --- INTERSECTION OBSERVER FOR ACTIVE NAV LINK ---
             const sections = document.querySelectorAll('section');
@@ -1293,7 +1311,4 @@
     </script>
 </body>
 </html>
-
-
-
 
