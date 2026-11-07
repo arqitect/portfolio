@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Eric Fadeyev</title>
+<meta name="description" content="Eric Fadeyev: bioengineering student at UC Santa Cruz designing antimicrobial peptides with machine learning. UCSC iGEM 2026, AMPiary.">
+<link rel="canonical" href="https://ericfadeyev.com/">
+<meta property="og:title" content="Eric Fadeyev">
+<meta property="og:description" content="Bioengineering student at UC Santa Cruz designing antimicrobial peptides with machine learning. UCSC iGEM 2026, AMPiary.">
+<meta property="og:url" content="https://ericfadeyev.com/">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#eeede8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* A short page, phone first: a face and a way to connect up top, then the work.
+     A single light theme on purpose: ink on lab paper. */
+  :root {
+    --paper: #eeede8;
+    --ink: #1a1d26;
+    --ink-2: #545a66;
+    --ink-3: #8a8e92;
+    --rule: #d8d2c6;
+    --mark: #5b3a9e;            /* crystal violet, the Gram stain dye */
+    --mark-soft: rgba(91, 58, 158, .12);
+    --serif: "Newsreader", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+    --bar-h: 56px;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--serif); font-size: 18px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  img { max-width: 100%; }
+  a { color: inherit; }
+  ::selection { background: var(--mark-soft); }
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: 50; pointer-events: none; opacity: .3; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .40 0 0 0 0 .33 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ---- top bar */
+  .bar { position: fixed; z-index: 20; inset: 0 0 auto 0; padding-top: env(safe-area-inset-top, 0px); background: rgba(238, 237, 232, .86); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid transparent; transition: border-color .3s; }
+  .bar.scrolled { border-bottom-color: var(--rule); }
+  .bar .in-bar { max-width: 1040px; margin: 0 auto; height: var(--bar-h); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { text-decoration: none; font-size: 20px; line-height: 1; white-space: nowrap; opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .3s; pointer-events: none; }
+  .bar.named .brand { opacity: 1; transform: none; pointer-events: auto; }
+  .bar nav { display: flex; gap: 18px; font-family: var(--mono); font-size: 12px; letter-spacing: .02em; }
+  .bar nav a { color: var(--ink-2); text-decoration: none; padding: 8px 0; }
+  .bar nav a:hover, .bar nav a:focus-visible { color: var(--mark); text-decoration: underline; text-underline-offset: 4px; }
+  .bar nav .wide { display: none; }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding: calc(var(--bar-h) + env(safe-area-inset-top, 0px) + 8px) 20px calc(40px + env(safe-area-inset-bottom, 0px)); }
+
+  /* ---- hero: a face, a name, a way to connect */
+  /* phone: name first, then the photo, then the intro and buttons (the text block's children join the grid) */
+  .hero { display: grid; }
+  .hero-text { display: contents; }
+  .hero h1 { order: -1; margin: 10px 0 18px; }
+  .portrait { position: relative; margin: 0 0 20px; aspect-ratio: 4 / 3; border-radius: 3px; overflow: hidden; background: #e4e1d8; }
+  .portrait img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .portrait .ph { position: absolute; inset: 10px; border: 1.5px dashed #c9c2b4; border-radius: 2px; display: grid; place-items: center; font-family: var(--mono); font-size: 12px; color: var(--ink-3); text-align: center; }
+  h1 { font-weight: 400; font-size: clamp(48px, 13.5vw, 80px); line-height: 1; letter-spacing: -.02em; margin: 0 0 16px; }
+  .lede { font-size: clamp(20px, 5.2vw, 23px); line-height: 1.45; font-weight: 300; margin: 0; text-wrap: pretty; }
+  .u { position: relative; white-space: nowrap; }
+  .u svg { position: absolute; left: -2%; bottom: -.3em; width: 104%; height: .5em; overflow: visible; }
+  .u path { fill: none; stroke: var(--mark); stroke-width: 1.7; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .6s cubic-bezier(.6,.05,.3,1) .3s forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  .connect { margin-top: 26px; }
+  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 56px; padding: 0 18px; border: 1.5px solid var(--ink); border-radius: 999px; font-family: var(--mono); font-size: 14.5px; font-weight: 500; text-decoration: none; transition: transform .15s, background .2s, color .2s; }
+  .btn.primary { background: var(--ink); color: var(--paper); }
+  .btn:hover { background: var(--mark); border-color: var(--mark); color: #fff; }
+  .btn:active { transform: scale(.98); }
+  .btn:focus-visible, .links a:focus-visible, .work a:focus-visible, .brand:focus-visible { outline: 2px solid var(--mark); outline-offset: 3px; }
+  .btn span { font-size: 17px; line-height: 1; }
+  .met { display: flex; align-items: flex-start; gap: 10px; margin: 14px 4px 0; font-style: italic; font-size: 16px; color: var(--ink-2); }
+  .met svg { flex: none; width: 34px; height: 30px; margin-top: -10px; overflow: visible; }
+  .met path { fill: none; stroke: var(--mark); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .links { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 14px 4px 0; font-family: var(--mono); font-size: 13.5px; }
+  .links a { color: var(--ink-2); text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 4px; padding: 6px 0; }
+  .links a:hover { color: var(--mark); text-decoration-color: var(--mark); }
+
+  /* ---- the work */
+  h2 { font-family: var(--mono); font-weight: 500; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0; }
+  .work-sec { margin: 64px auto 0; max-width: 760px; position: relative; }
+  .work-head { padding-bottom: 8px; }
+
+  .work { list-style: none; margin: 0; padding: 0; }
+  .work li { display: grid; grid-template-columns: 34px 1fr; padding: 26px 0; border-top: 1px solid var(--rule); }
+  .work li:last-child { border-bottom: 1px solid var(--rule); }
+  .work .n { font-family: var(--mono); font-size: 11.5px; color: var(--mark); padding-top: 6px; }
+  .work h3 { font-weight: 400; font-size: 23px; line-height: 1.2; margin: 0 0 6px; }
+  .work h3 small { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); font-weight: 400; margin-left: 6px; white-space: nowrap; }
+  .work p { margin: 0; color: var(--ink-2); font-size: 17px; }
+  .work a { font-family: var(--mono); font-size: 12.5px; color: var(--ink); text-underline-offset: 4px; display: inline-block; margin-top: 10px; }
+  .work a:hover { color: var(--mark); }
+
+  .off-sec { margin: 40px auto 0; max-width: 760px; }
+  .off { font-size: 17px; color: var(--ink-2); margin: 10px 0 0; }
+  footer { max-width: 760px; margin: 64px auto 0; font-family: var(--mono); font-size: 11px; color: var(--ink-3); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+  /* entrance: a quick, small rise as each piece scrolls in */
+  .js .rv { opacity: 0; transform: translateY(6px); transition: opacity .35s cubic-bezier(.2,.7,.2,1), transform .35s cubic-bezier(.2,.7,.2,1); }
+  .js .rv.shown { opacity: 1; transform: none; }
+
+  @media (min-width: 860px) {
+    body { font-size: 19px; }
+    .bar nav .wide { display: inline; }
+    .wrap { padding-left: 32px; padding-right: 32px; }
+    .hero { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: center; min-height: calc(100vh - var(--bar-h) - 40px); }
+    .portrait { aspect-ratio: 4 / 5; margin: 0; }
+    .hero-text { display: block; }
+    .hero h1 { order: 0; margin: 0 0 16px; }
+    .work-sec { margin-top: 40px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .js .rv { transition: none; opacity: 1; transform: none; }
+    .u path { animation: none; stroke-dashoffset: 0; }
+  }
+</style>
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+<header class="bar" id="bar">
+  <div class="in-bar">
+    <a class="brand" id="brand" href="#">Eric Fadeyev</a>
+    <nav aria-label="Elsewhere">
+      <a href="https://www.instagram.com/ericfadeyev/" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://www.linkedin.com/in/ericfadeyev/" target="_blank" rel="noopener">LinkedIn</a>
+      <a class="wide" href="https://github.com/arqitect" target="_blank" rel="noopener">GitHub</a>
+      <a class="wide" href="mailto:ericfadeyev@gmail.com">Email</a>
+      <!-- TODO: add resume.pdf to the repo, then restore: <a class="wide" href="resume.pdf">Résumé</a> -->
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero" aria-label="About">
+    <figure class="portrait rv">
+      <!-- TODO: add photo.jpg to the repo and replace the placeholder div with:
+           <img src="photo.jpg" alt="Eric Fadeyev" width="800" height="1000"> -->
+      <div class="ph">your photo goes here</div>
+    </figure>
+    <div class="hero-text">
+      <h1 class="rv" id="name">Eric Fadeyev</h1>
+      <p class="lede rv">Bioengineering student at UC Santa Cruz. I use machine learning to design antimicrobial peptides, and build the pipeline that gets them <span class="u">to the bench<svg viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M3 8 C 42 3, 88 10, 130 6 S 186 4, 197 7"/></svg></span>.</p>
+      <div class="connect rv">
+        <div class="btns">
+          <a class="btn primary" href="https://www.linkedin.com/in/ericfadeyev/" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span></a>
+          <a class="btn" href="https://www.instagram.com/ericfadeyev/" target="_blank" rel="noopener">Instagram <span aria-hidden="true">↗</span></a>
+        </div>
+        <p class="met"><svg viewBox="0 0 34 30" aria-hidden="true"><path d="M30 28 C 22 26, 8 22, 5 6 M1 11 L5 4 L10 10"/></svg><span>Met me at the Jamboree? Connect and tell me what we talked about.</span></p>
+        <div class="links">
+          <a href="mailto:ericfadeyev@gmail.com">Email</a>
+          <!-- TODO: <a href="resume.pdf">Résumé (PDF)</a> -->
+          <a href="https://github.com/arqitect" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="work-sec" aria-labelledby="work-h">
+    <div class="work-head rv">
+      <h2 id="work-h">What I work on</h2>
+    </div>
+    <ul class="work" id="work">
+      <li class="rv">
+        <span class="n">01</span>
+        <div>
+          <h3>AMPiary <small>UCSC iGEM 2026</small></h3>
+          <p>Our team’s project: a system for rapidly designing and validating new antimicrobial peptides as potential therapeutics for Lyme disease and other infections.</p>
+          <a href="https://2026.igem.wiki/ucsc/" target="_blank" rel="noopener">Team wiki ↗</a>
+        </div>
+      </li>
+      <li class="rv">
+        <span class="n">02</span>
+        <div>
+          <h3>revAMP <small>genetic algorithm + ML</small></h3>
+          <p>A genetic algorithm, built in Nextflow, that evolves populations of peptide sequences. A neural network predicts each candidate’s bacteria-killing activity and its toxicity to red blood cells, and the strongest, safest sequences carry forward to the lab.</p>
+        </div>
+      </li>
+      <li class="rv">
+        <span class="n">03</span>
+        <div>
+          <h3>At the bench <small>wet lab</small></h3>
+          <p>Setting up and calibrating our FPLC to purify the peptides we design, from pump flow rate to pH probe.</p>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <section class="off-sec rv" aria-labelledby="off-h">
+    <h2 id="off-h">Off the clock</h2>
+    <p class="off">Volleyball. I play, and I coach.</p>
+  </section>
+
+  <footer class="rv">
+    <span>© 2026 Eric Fadeyev</span>
+    <span>Santa Cruz, California</span>
+  </footer>
+</main>
+
+<script>
+  const bar = document.getElementById('bar');
+  document.getElementById('brand').addEventListener('click', e => { e.preventDefault(); scrollTo({ top: 0, behavior: 'smooth' }); });
+  const onScroll = () => bar.classList.toggle('scrolled', scrollY > 8);
+  addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  // each piece does the small rise as it comes on screen, and resets once fully off screen
+  const rvObs = new IntersectionObserver(entries => {
+    let n = 0;
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.style.transitionDelay = (n++ * 40) + 'ms'; e.target.classList.add('shown'); }
+      else { e.target.style.transitionDelay = '0ms'; e.target.classList.remove('shown'); }
+    });
+  }, { rootMargin: '0px 0px -6% 0px' });
+  document.querySelectorAll('.rv').forEach(el => rvObs.observe(el));
+  new IntersectionObserver(([e]) => bar.classList.toggle('named', !e.isIntersecting && e.boundingClientRect.top < 0), { rootMargin: '-56px 0px 0px 0px' }).observe(document.getElementById('name'));
+</script>
+</body>
+</html>
