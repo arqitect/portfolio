@@ -43,7 +43,7 @@
   }
 
   /* ---- top bar */
-  .bar { position: fixed; z-index: 20; inset: 0 0 auto 0; padding-top: env(safe-area-inset-top, 0px); background: rgba(238, 237, 232, .86); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid transparent; transition: border-color .3s; }
+  .bar { position: fixed; z-index: 20; inset: 0 0 auto 0; padding-top: env(safe-area-inset-top, 0px); background: var(--paper); border-bottom: 1px solid transparent; transition: border-color .3s; }
   .bar.scrolled { border-bottom-color: var(--rule); }
   .bar .in-bar { max-width: 1040px; margin: 0 auto; height: var(--bar-h); padding: 0 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   .brand { text-decoration: none; font-size: 20px; line-height: 1; white-space: nowrap; opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .3s; pointer-events: none; }
