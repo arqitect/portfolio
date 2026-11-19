@@ -70,10 +70,8 @@
   [data-type="modern"] .lede, [data-type="modern"] .work p { font-weight: 400; }
 
   * { box-sizing: border-box; }
-  /* no sideways drag: clip inside the page's own wrapper. (Not on html/body: there Safari can turn the body into its
-     own scroller, which breaks the pinned peptide and can lay the page out wider than the screen.) */
+  /* no sideways drag: nothing is allowed to reach past the screen edges (no overflow tricks needed) */
   html { overscroll-behavior-x: none; }
-  .wrap { overflow-x: clip; }
   html { background: var(--bg) var(--grain); -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; transition: background-color .4s; }
   body { margin: 0; background: var(--bg) var(--grain); color: var(--ink); font-family: var(--text); font-size: 18px; line-height: 1.55; -webkit-font-smoothing: antialiased; transition: background-color .4s, color .4s; }
   a { color: inherit; }
@@ -150,10 +148,10 @@
   /* the peptide, pinned to the bottom of the screen. The stage itself is see-through: the canvas paints a
      page-coloured cover that hugs the molecule's outline (plus a solid strip along the bottom), and every
      edge of it is made of halftone dots that shrink to nothing, so words scrolling down break up into print */
-  /* (phones) the stage sticks to the top of the screen and is a full screen tall, measured as the largest viewport
-     (100lvh), so its lower edge reaches the real bottom of the screen, under Safari's bottom bar. The molecule is
-     framed against the always-visible height (100svh), so it never shifts as the bar shows and hides. */
-  .stage { order: -1; position: sticky; top: 0; z-index: 3; height: 100vh; height: 100lvh; margin: 0 calc(-1 * var(--gutter)) -100vh; margin-bottom: -100lvh; pointer-events: none; }
+  /* (phones) the peptide is drawn on a plain fixed layer covering the whole screen. Its height is the largest viewport
+     (100lvh), so it reaches the real bottom of the screen, under Safari's bottom bar; the molecule is framed against
+     the always-visible height (100svh), so it never shifts as the bar shows and hides. Nothing about it can widen the page. */
+  .stage { position: fixed; left: 0; right: 0; top: 0; height: 100vh; height: 100lvh; z-index: 3; pointer-events: none; }
   .stage .ring { z-index: 2; display: none; }   /* no circle or residue label */
   .tail { position: relative; display: flex; flex-direction: column; }
   .svh-probe { position: fixed; top: 0; left: 0; width: 1px; height: 100vh; height: 100svh; pointer-events: none; visibility: hidden; }
@@ -190,11 +188,11 @@
   .rule { position: absolute; left: 0; right: 0; height: 8px; margin-top: -4px; background: linear-gradient(transparent 3.5px, var(--rule) 3.5px, var(--rule) 4.5px, transparent 4.5px); filter: var(--wobble, none); }
   .item .why .rule { top: 0; }
 
-  .off-sec { position: relative; z-index: 1; margin: 0 -20px; padding: 56px 20px 0; }
+  .off-sec { position: relative; z-index: 1; margin: 0; padding: 56px 0 0; }
   .off-sec h2 { font: 500 11.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0; }
   .off { font-size: 18px; color: var(--ink-2); margin: 10px 0 0; }
   .pep-note { margin-bottom: 6px; color: var(--ink-2); text-wrap: balance; }
-  footer { position: relative; z-index: 1; background: var(--bg) var(--grain); margin: 0 -20px; padding: 64px 20px calc(36px + env(safe-area-inset-bottom, 0px)); font: 11px var(--mono); color: var(--ink-3); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+  footer { position: relative; z-index: 1; margin: 0; padding: 64px 0 calc(36px + env(safe-area-inset-bottom, 0px)); font: 11px var(--mono); color: var(--ink-3); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
 
   /* ---- entrance: a quick, small rise each time something comes on screen */
   .js .rv { opacity: 0; transform: translateY(6px); transition: opacity .35s cubic-bezier(.2,.7,.2,1), transform .35s cubic-bezier(.2,.7,.2,1); }
@@ -209,7 +207,7 @@
   [data-rough="1"] .style-btn, [data-rough="2"] .style-btn { border-radius: 40px 14px 38px 12px / 14px 36px 12px 40px; }
   /* two inks printed a little out of register */
   /* the photo, pinned up rather than placed */
-  [data-rough="1"] .portrait { transform: rotate(-.6deg); }
+  @media (min-width: 860px) { [data-rough="1"] .portrait { transform: rotate(-.6deg); } }   /* (a tilted photo pokes past a phone's edges) */
   [data-rough="2"] .portrait { transform: rotate(-1.4deg); box-shadow: 0 14px 30px -18px rgba(30, 20, 10, .45); }
   [data-rough="2"] .portrait::before, [data-rough="2"] .portrait::after { content: ""; position: absolute; z-index: 2; width: 86px; height: 26px; background: color-mix(in srgb, var(--bg) 70%, #f7f1d9); opacity: .82; box-shadow: 0 1px 2px rgba(0, 0, 0, .08); }
   [data-rough="2"] .portrait::before { top: -10px; left: 18px; transform: rotate(-7deg); }
@@ -240,7 +238,7 @@
        scrolls away at the end, all handled by the browser so it never lags behind a fast scroll.
        It spans the full window but takes up no room in the flow. */
     .tail { display: flex; flex-direction: column; }
-    .stage { order: -1; position: sticky; top: calc(var(--bar-h) + env(safe-area-inset-top, 0px)); bottom: auto; z-index: 3;
+    .stage { order: -1; position: sticky; top: calc(var(--bar-h) + env(safe-area-inset-top, 0px)); bottom: auto; left: auto; right: auto; z-index: 3;
       width: 100vw; height: calc(100vh - var(--bar-h)); margin: 0 0 calc(-1 * (100vh - var(--bar-h))) calc(-1 * (var(--cl) + var(--cw) * 0.52)); }
     .tail { margin: 0 calc(50% - 50vw); padding: 0 var(--cl) 0 calc(var(--cl) + var(--cw) * 0.52); }
     .work-sec { margin-top: 96px; }
@@ -882,7 +880,8 @@ function applyStyle() {
 
 // ---- sizing: the paper at z = 0 exactly fills the stage
 const TAN15 = Math.tan(THREE.MathUtils.degToRad(15));
-let VS = 1, stTop = 0;                    // VS: the always-visible height the molecule is framed against (phones: 100svh)
+let VS = 1, stTop = 0;
+const tailEl = document.querySelector('.tail'), portraitEl = document.querySelector('.portrait');                    // VS: the always-visible height the molecule is framed against (phones: 100svh)
 let SW = 1, SH = 1, visW = 100, visH = 100, D = 100, fitScale = 1, sized = false, colCx = 0.25;
 function measure() {
   const r = stageEl.getBoundingClientRect();
@@ -910,6 +909,7 @@ function measure() {
   sized = false;
 }
 new ResizeObserver(measure).observe(stageEl);
+new ResizeObserver(() => measureLayout && measureLayout()).observe(document.body);
 measure();
 // a point on screen (CSS px within the stage) lifted to height z above the paper
 const toWorld = (sx, sy, z, out) => out.set((sx / SW - 0.5) * visW * (D - z) / D, (0.5 - sy / SH) * visH * (D - z) / D, z);
@@ -927,7 +927,24 @@ const FRAMES = slides.map((el, i) => {
   return { res: r, zoom: 1.5, sx: 0.5, sy: 0.885, pan: 0.85, tilt: -0.06, label: el.dataset.label };
 });
 // how far through the slides we are, as a continuous number: 0 = intro, 1 = first project ...
+// (phones) where the pieces sit on the page, measured when the layout changes rather than every frame
+const layout = { slides: [], workTop: 0, tailBottom: 0 };
+function measureLayout() {
+  const y = scrollY;
+  layout.slides = slides.map(el => el.getBoundingClientRect().top + y);
+  layout.workTop = document.querySelector('.work-sec').getBoundingClientRect().top + y;
+  layout.tailBottom = tailEl.getBoundingClientRect().bottom + y;
+}
+measureLayout();
+addEventListener('load', measureLayout);
+document.fonts && document.fonts.ready.then(measureLayout);
 function slidePos() {
+  if (phone) {
+    // a project takes over as its top scrolls from 62% to 30% of the way down the visible screen
+    let s = 0;
+    for (let i = 1; i < layout.slides.length; i++) s += smooth(layout.slides[i] - VS * 0.62, layout.slides[i] - VS * 0.3, scrollY);
+    return s;
+  }
   // the open space is between the top bar and the band; a project takes over as its text rises through it
   // a long, continuous hand-off: a project starts taking over as its text reaches the molecule, and has fully
   // taken over by the time it's three-quarters of the way up the open space
@@ -959,8 +976,8 @@ function loopPath(r, wob, seed) {
 // ---- the loop
 const tmp = new THREE.Vector3(), tgt = new THREE.Vector3(), off = new THREE.Vector3();
 let visible = false, start = null, sPrev = -1;
-const tailEl = document.querySelector('.tail'), portraitEl = document.querySelector('.portrait');
 let foldShown = 1, meshFine = true, lastMove = 0;
+let cleared = false;
 let ufVel = 0, fdShown = 0, fdVel = 0, frameNo = 0, spinAcc = 0;                               // the unfold follows a spring: gentle start, quick middle, soft landing                     // seconds, for a full unfold
 let ufShown = 0, lastFrame = null, aliveSince = null, appear = 0, heldOff = 0, lastNear = null, spinTarget = 0, spinOff = 0, spinVel = 0;
 const cam = { x: 0, y: 0, s: 1, tilt: 0, init: false };
@@ -1001,7 +1018,8 @@ function frame(ms) {
   // should the peptide be here? (a computer: once the photo in the same column has gone; a phone: once the work is on screen)
   const tr = tailEl.getBoundingClientRect();
   let want;
-  if (phone) want = tr.top < innerHeight * 0.2 && tr.bottom > innerHeight * 0.4;   // grows in as it scrolls up into view (the stage moves with the page)
+  // phones: grows in once the work section's top is a little way up the screen, shrinks away after the ending
+  if (phone) want = scrollY > layout.workTop - VS * 0.45 && scrollY < layout.tailBottom - VS * 0.35;
   else {
     const ph = portraitEl.getBoundingClientRect().bottom;
     want = ph < innerHeight * 0.3 && tr.bottom > innerHeight * 0.35;   // position is the browser's job (sticky); this only grows and shrinks the dots
@@ -1009,12 +1027,14 @@ function frame(ms) {
   appear = reduceMotion ? (want ? 1 : 0) : appear + ((want ? 1 : 0) - appear) * (1 - Math.exp(-dt * 3));   // grow / shrink over ~0.8 s
   tickTheme();
   if (!visible) return;
+  if (phone && !want && appear < 0.004) { if (!cleared) { renderer.setScissorTest(false); renderer.clear(); cleared = true; lettersEl.style.display = 'none'; } return; }
+  cleared = false;
   if (!sized) { renderer.setPixelRatio(dpr); renderer.setSize(SW, SH, false); sized = true; }
   for (const m of [risoColorMat, risoInkMat, paperMat, stippleMat]) m.uniforms.uAppear.value = ease(clamp(appear));
   glass.opacity = 0.9 * clamp(appear);
 
   // slides -> a blend of two framings (sp is already eased, and continuous, so the blend is linear)
-  stTop = stageEl.getBoundingClientRect().top;
+  stTop = phone ? 0 : stageEl.getBoundingClientRect().top;     // (a phone's stage is fixed at the top of the screen)
   const sp = motion === 'pan' ? slidePos() : 0;
   const i0 = Math.min(Math.floor(sp), FRAMES.length - 1), i1 = Math.min(i0 + 1, FRAMES.length - 1), f = sp - i0;
   const A = FRAMES[i0], B = FRAMES[i1];
@@ -1159,7 +1179,7 @@ function frame(ms) {
   // whole canvas (cheap), then draw just that band
   const bandPx = Math.min(SH, topY / dpr + BLUR_PX + 90);
   // ...and never below the end of the work section: at the very end the full-height stage overhangs the footer
-  const clipPx = clamp(stTop + SH - tr.bottom, 0, SH);
+  const clipPx = clamp(phone ? SH - (layout.tailBottom - scrollY) : stTop + SH - tr.bottom, 0, SH);
   renderer.setScissorTest(false); renderer.clear();
   renderer.setScissorTest(true); renderer.setScissor(0, clipPx, SW, Math.max(0, bandPx - clipPx));
   renderer.autoClear = false; renderer.render(scene, camera); renderer.autoClear = true;
