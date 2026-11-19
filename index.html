@@ -17,17 +17,17 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..600,0..100,0..1;1,9..144,300..500,0..100,0..1&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400..600&family=Instrument+Serif:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap" rel="stylesheet">
 <script>
-  // apply the saved style before anything paints, so the page never flashes the default
+  // the look is fixed; the page always opens light (Oat), even on a dark-mode device. Kiln is the dark option.
   (function () {
-    var d = document.documentElement, s = {};
-    try { s = JSON.parse(localStorage.getItem('ef-style') || '{}'); } catch (e) {}
-    d.dataset.palette = s.palette || 'oat';
-    d.dataset.type = s.type || 'editorial';
-    d.dataset.pep = s.pep || 'riso';
-    d.dataset.motion = s.motion || 'pan';
-    d.dataset.rough = s.rough || '1';
-    d.dataset.fade = s.fade || 'ink';
-    d.dataset.unfold = s.unfold || 'move';
+    var d = document.documentElement;
+    d.dataset.palette = 'oat';
+    d.dataset.type = 'editorial';
+    d.dataset.pep = 'riso';
+    d.dataset.motion = 'pan';
+    d.dataset.rough = '1';
+    d.dataset.fade = 'ink';
+    d.dataset.unfold = 'together';
+    d.dataset.size = 'large';
     d.classList.add('js');
   })();
   // the browser chrome takes the page colour too
@@ -78,7 +78,7 @@
   img { max-width: 100%; }
 
   /* ---- top bar */
-  .bar { position: fixed; z-index: 40; inset: 0 0 auto 0; padding-top: env(safe-area-inset-top, 0px); background: linear-gradient(to bottom, var(--bg) 0%, var(--bg) 35%, color-mix(in srgb, var(--bg) 35%, transparent) 100%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid transparent; transition: border-color .3s, background-color .4s; }
+  .bar { position: fixed; z-index: 40; inset: 0 0 auto 0; padding-top: env(safe-area-inset-top, 0px); background: linear-gradient(to bottom, var(--bg) 0%, var(--bg) 35%, color-mix(in srgb, var(--bg) 35%, transparent) 100%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid transparent; transition: border-color .3s; }
   .bar::before { content: ""; position: absolute; inset: 0 0 -1px 0; z-index: -1; background-image: var(--grain); pointer-events: none; }
   .in-bar { max-width: 1040px; margin: 0 auto; height: var(--bar-h); padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .brand { font-family: var(--display); font-weight: var(--display-w); text-decoration: none; font-size: 20px; line-height: 1; white-space: nowrap; opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .3s; pointer-events: none; }
@@ -88,7 +88,15 @@
   .bar nav a:focus-visible { color: var(--mark); text-decoration: underline; text-underline-offset: 4px; }
   .bar nav .wide { display: none; }
   .style-btn { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 11px 0 9px; border: 1px solid var(--rule); border-radius: 999px; background: transparent; color: var(--ink); font: 500 11.5px var(--mono); letter-spacing: .02em; cursor: pointer; }
-  .style-btn i { width: 12px; height: 12px; border-radius: 50%; background: conic-gradient(var(--mark) 0 50%, var(--ink) 0); }
+  .style-btn i { width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(90deg, var(--ink) 50%, transparent 50%); box-shadow: inset 0 0 0 1.5px var(--ink); transition: transform .3s; }
+  /* just the icon: a round, borderless 36px tap target */
+  .theme-btn { width: 36px; height: 36px; padding: 0; justify-content: center; border-color: transparent; border-radius: 50% !important; }
+  /* light mode shows the moon (go dark); dark mode shows the sun (go light) */
+  .theme-btn { position: relative; color: var(--ink); }
+  .theme-btn .ico { position: absolute; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: opacity .25s, transform .35s cubic-bezier(.2,.7,.2,1); }
+  .theme-btn .sun { opacity: 0; transform: rotate(-60deg) scale(.6); }
+  .theme-btn[aria-pressed="true"] .sun { opacity: 1; transform: none; }
+  .theme-btn[aria-pressed="true"] .moon { opacity: 0; transform: rotate(60deg) scale(.6); }
   .style-btn[aria-expanded="true"] { border-color: var(--ink); }
 
   /* ---- the style menu */
@@ -138,10 +146,13 @@
   /* the peptide, pinned to the bottom of the screen. The stage itself is see-through: the canvas paints a
      page-coloured cover that hugs the molecule's outline (plus a solid strip along the bottom), and every
      edge of it is made of halftone dots that shrink to nothing, so words scrolling down break up into print */
-  .stage { position: sticky; bottom: 0; bottom: calc(100dvh - 100lvh); z-index: 3; height: calc(clamp(320px, 52svh, 560px) + env(safe-area-inset-bottom, 0px)); height: calc(clamp(320px, 52svh, 560px) + env(safe-area-inset-bottom, 0px) + 100lvh - 100dvh); margin: calc(-0.3 * clamp(320px, 52svh, 560px)) calc(-1 * var(--gutter)) 0; pointer-events: none; }
-  .stage .ring { z-index: 2; }
+  /* (phones) the stage runs a fixed 110px below the bottom of the visible page: under Safari's bottom bar when it's showing,
+     off-screen when it isn't. The molecule is framed against the visible part, so it never shifts. */
+  .stage { position: sticky; bottom: -110px; z-index: 3; height: calc(clamp(320px, 52svh, 560px) + env(safe-area-inset-bottom, 0px) + 110px); margin: calc(-0.3 * clamp(320px, 52svh, 560px)) calc(-1 * var(--gutter)) 0; pointer-events: none; }
+  .stage .ring { z-index: 2; display: none; }   /* no circle or residue label */
   .tail { position: relative; }
   .finale { height: 58svh; }
+  [data-unfold="together"] .finale { height: 74svh; }   /* more room to scroll through it */
   /* the name, letter by letter above each bead once the chain has unfolded */
   .letters { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
   .letters span { position: absolute; left: 0; top: 0; font-family: var(--display); font-weight: var(--display-w); font-size: clamp(30px, 8.4vw, 54px); line-height: 1; color: var(--ink); opacity: 0; will-change: transform, opacity; }
@@ -186,22 +197,11 @@
   /* ============================== intentional imperfection ============================== */
   [data-rough="1"] { --wobble: url(#wob1); }
   [data-rough="2"] { --wobble: url(#wob2); }
-  /* headings sit a hair off true, like set by hand */
-  [data-rough="1"] h1 { --tilt: rotate(-.7deg); }
-  [data-rough="2"] h1 { --tilt: rotate(-1.6deg); }
-  [data-rough="1"] .slide:nth-of-type(odd) .item h3 { transform: rotate(-.4deg); }
-  [data-rough="1"] .slide:nth-of-type(even) .item h3 { transform: rotate(.5deg); }
-  [data-rough="2"] .slide:nth-of-type(odd) .item h3 { transform: rotate(-1.2deg) translateX(-2px); }
-  [data-rough="2"] .slide:nth-of-type(even) .item h3 { transform: rotate(1.1deg) translateX(3px); }
-  [data-rough="1"] .item h3, [data-rough="2"] .item h3 { transform-origin: left bottom; display: inline-block; }
-  [data-rough="1"] .item h3 small, [data-rough="2"] .item h3 small { transform: none; }
   /* buttons and pills drawn freehand rather than with a compass */
   [data-rough="1"] .btn, [data-rough="2"] .btn { border-radius: 255px 22px 225px 18px / 18px 225px 22px 255px; }
   [data-rough="2"] .btn { border-width: 2px; }
   [data-rough="1"] .style-btn, [data-rough="2"] .style-btn { border-radius: 40px 14px 38px 12px / 14px 36px 12px 40px; }
   /* two inks printed a little out of register */
-  [data-rough="2"] h1, [data-rough="2"] .item h3 { text-shadow: 2px 1.5px 0 color-mix(in srgb, var(--mark) 40%, transparent); }
-  [data-rough="2"] .intro-copy { text-shadow: 1.5px 1px 0 color-mix(in srgb, var(--mark-2) 35%, transparent); }
   /* the photo, pinned up rather than placed */
   [data-rough="1"] .portrait { transform: rotate(-.6deg); }
   [data-rough="2"] .portrait { transform: rotate(-1.4deg); box-shadow: 0 14px 30px -18px rgba(30, 20, 10, .45); }
@@ -234,7 +234,7 @@
        scrolls away at the end, all handled by the browser so it never lags behind a fast scroll.
        It spans the full window but takes up no room in the flow. */
     .tail { display: flex; flex-direction: column; }
-    .stage { order: -1; position: sticky; top: calc(var(--bar-h) + env(safe-area-inset-top, 0px)); z-index: 3;
+    .stage { order: -1; position: sticky; top: calc(var(--bar-h) + env(safe-area-inset-top, 0px)); bottom: auto; z-index: 3;
       width: 100vw; height: calc(100vh - var(--bar-h)); margin: 0 0 calc(-1 * (100vh - var(--bar-h))) calc(-1 * (var(--cl) + var(--cw) * 0.52)); }
     .tail { margin: 0 calc(50% - 50vw); padding: 0 var(--cl) 0 calc(var(--cl) + var(--cw) * 0.52); }
     .work-sec { margin-top: 96px; }
@@ -245,6 +245,7 @@
     .item p { font-size: 19.5px; }
     .item .why { font-size: 16.5px; }
     .finale { height: 52vh; }
+    [data-unfold="together"] .finale { height: 76vh; }
     .off-sec { margin: 0; padding: 0; max-width: none; }
     footer { margin: 0; padding-left: 0; padding-right: 0; }
   }
@@ -271,40 +272,10 @@
       <a href="https://www.linkedin.com/in/ericfadeyev/" target="_blank" rel="noopener">LinkedIn</a>
       <a class="wide" href="https://github.com/arqitect" target="_blank" rel="noopener">GitHub</a>
       <a class="wide" href="mailto:ericfadeyev@gmail.com">Email</a>
-      <button class="style-btn" id="styleBtn" aria-expanded="false" aria-controls="menu"><i aria-hidden="true"></i>Style</button>
+      <button class="style-btn theme-btn" id="themeBtn" aria-label="Switch to dark mode" aria-pressed="false"><svg class="ico moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z"/></svg><svg class="ico sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></button>
     </nav>
   </div>
 </header>
-
-<div class="menu" id="menu" role="dialog" aria-label="Page style">
-  <div class="grp"><h4>Palette</h4><div class="swatches" data-key="palette">
-    <button data-v="oat"><b style="background:linear-gradient(135deg,#efe9df 50%,#b1502a 50%)"></b>Oat</button>
-    <button data-v="paper"><b style="background:linear-gradient(135deg,#eeede8 50%,#5b3a9e 50%)"></b>Paper</button>
-    <button data-v="moss"><b style="background:linear-gradient(135deg,#e8e6da 50%,#4f6b3a 50%)"></b>Moss</button>
-    <button data-v="cobalt"><b style="background:linear-gradient(135deg,#f3f0e8 50%,#2747d6 50%)"></b>Cobalt</button>
-    <button data-v="riso"><b style="background:linear-gradient(135deg,#f4efe6 50%,#ff4f7b 50%)"></b>Riso</button>
-    <button data-v="kiln"><b style="background:linear-gradient(135deg,#17140f 50%,#e0894a 50%)"></b>Kiln</button>
-  </div></div>
-  <div class="grp"><h4>Peptide</h4><div class="seg" data-key="pep">
-    <button data-v="riso">Print</button><button data-v="stipple">Stipple</button><button data-v="glass">Glass</button>
-  </div></div>
-  <div class="grp"><h4>Motion</h4><div class="seg" data-key="motion">
-    <button data-v="pan">Zoom &amp; glide</button><button data-v="still">Still</button>
-  </div></div>
-  <div class="grp"><h4>Unfold</h4><div class="seg" data-key="unfold">
-    <button data-v="move">Move, then open</button><button data-v="open">Open, then move</button><button data-v="upright">Upright</button><button data-v="slow">Slow</button>
-  </div></div>
-  <div class="grp"><h4>Fade at the top</h4><div class="seg" data-key="fade">
-    <button data-v="off">None</button><button data-v="ink">Ink-out</button><button data-v="worn">Worn</button><button data-v="drift">Drift</button>
-  </div></div>
-  <div class="grp"><h4>Imperfection</h4><div class="seg" data-key="rough">
-    <button data-v="0">None</button><button data-v="1">Subtle</button><button data-v="2">Loud</button>
-  </div></div>
-  <div class="grp"><h4>Type</h4><div class="seg" data-key="type">
-    <button data-v="editorial">Editorial</button><button data-v="modern">Modern</button><button data-v="humanist">Humanist</button>
-  </div></div>
-  <div class="foot"><span>Saved on this device</span><button id="reset">Reset</button></div>
-</div>
 
 <main class="wrap">
   <section class="hero" aria-label="About">
@@ -318,8 +289,8 @@
       <p class="lede rv">Biomolecular engineering and bioinformatics student at UC Santa Cruz. I use machine learning to design antimicrobial peptides, and build the pipeline that gets them <span class="u">to the bench<svg viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M3 8 C 42 3, 88 10, 130 6 S 186 4, 197 7"/></svg></span>.</p>
       <div class="connect rv">
         <div class="btns">
-          <a class="btn primary" href="https://www.linkedin.com/in/ericfadeyev/" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span></a>
-          <a class="btn" href="https://www.instagram.com/ericfadeyev/" target="_blank" rel="noopener">Instagram <span aria-hidden="true">↗</span></a>
+          <a class="btn primary" href="https://www.instagram.com/ericfadeyev/" target="_blank" rel="noopener">Instagram <span aria-hidden="true">↗</span></a>
+          <a class="btn" href="https://www.linkedin.com/in/ericfadeyev/" target="_blank" rel="noopener">LinkedIn <span aria-hidden="true">↗</span></a>
         </div>
         <p class="met"><svg viewBox="0 0 34 30" aria-hidden="true"><path d="M30 28 C 22 26, 8 22, 5 6 M1 11 L5 4 L10 10"/></svg><span>Met me at the Jamboree? Connect and tell me what we talked about.</span></p>
         <div class="links">
@@ -406,28 +377,17 @@
   }, { rootMargin: '0px 0px -6% 0px' });
   document.querySelectorAll('.rv').forEach(el => rvObs.observe(el));
 
-  const DEFAULTS = { palette: 'oat', type: 'editorial', pep: 'riso', motion: 'pan', rough: '1', fade: 'ink', unfold: 'move' };
-  const menu = document.getElementById('menu'), styleBtn = document.getElementById('styleBtn');
-  function current() { const o = {}; for (const k in DEFAULTS) o[k] = html.dataset[k]; return o; }
-  function sync() {
-    menu.querySelectorAll('[data-key]').forEach(g => g.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(html.dataset[g.dataset.key] === b.dataset.v))));
-  }
-  function setStyle(k, v) {
-    html.dataset[k] = v; sync();
-    try { localStorage.setItem('ef-style', JSON.stringify(current())); } catch (e) {}
+  // light (Oat) / dark (Kiln)
+  const themeBtn = document.getElementById('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = html.dataset.palette !== 'kiln';
+    html.dataset.palette = dark ? 'kiln' : 'oat';
+    themeBtn.setAttribute('aria-pressed', String(dark));
+    themeBtn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
     syncThemeColor();
-    dispatchEvent(new CustomEvent('stylechange', { detail: { key: k } }));
-  }
-  menu.addEventListener('click', e => {
-    const b = e.target.closest('button[data-v]');
-    if (b) setStyle(b.parentElement.dataset.key, b.dataset.v);
+    dispatchEvent(new CustomEvent('stylechange', { detail: { key: 'palette' } }));
   });
-  document.getElementById('reset').addEventListener('click', () => { for (const k in DEFAULTS) setStyle(k, DEFAULTS[k]); });
-  const toggle = open => { menu.classList.toggle('open', open); styleBtn.setAttribute('aria-expanded', String(open)); };
-  styleBtn.addEventListener('click', e => { e.stopPropagation(); toggle(!menu.classList.contains('open')); });
-  document.addEventListener('click', e => { if (!menu.contains(e.target)) toggle(false); });
-  addEventListener('keydown', e => { if (e.key === 'Escape') toggle(false); });
-  sync(); syncThemeColor();
+  syncThemeColor();
 </script>
 
 <script type="importmap">
@@ -459,6 +419,7 @@ let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch { throw new Error('no WebGL'); }
 const phone = matchMedia('(max-width: 859px)').matches;
 const dpr = Math.min(devicePixelRatio, phone ? 1.5 : 2);
+const EXTRA = phone ? 110 : 0;          // px of stage hanging below the visible page (under Safari's bar)
 
 // ---- structure prep: center, then lay the chain's end-to-end axis along +x
 const atoms = ATOMS.map(([res, name, el, x, y, z]) => ({ res, name, el, fold: new THREE.Vector3(x, y, z) }));
@@ -515,17 +476,17 @@ const blurQuad = new FullScreenQuad(blurMat);
 const BLUR_PX = 46;                                       // how far the cover reaches past the outline, in CSS px
 const paperMat = new THREE.ShaderMaterial({
   uniforms: { uSil: { value: blurB.texture }, uBg: { value: new THREE.Color() }, uRes: { value: new THREE.Vector2(1, 1) }, uDpr: { value: dpr },
-              uStrip: { value: 120 }, uEdge: { value: 46 }, uFade: { value: 70 }, uRough: { value: 1 }, uDark: { value: 0 }, uTopY: { value: 1 }, uBotY: { value: 0 }, uFadeMode: { value: 3 }, uBelow: { value: 1 }, uAppear: { value: 0 } },
+              uStrip: { value: 120 }, uEdge: { value: 46 }, uFade: { value: 70 }, uRough: { value: 1 }, uDark: { value: 0 }, uTopY: { value: 1 }, uBotY: { value: 0 }, uFadeMode: { value: 3 }, uBelow: { value: 1 }, uAppear: { value: 0 }, uFadeStart: { value: 0.42 }, uCell: { value: 6.5 } },
   vertexShader: `void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: `
-    uniform sampler2D uSil; uniform vec3 uBg; uniform vec2 uRes; uniform float uDpr, uStrip, uEdge, uFade, uRough, uDark, uTopY, uBotY, uFadeMode, uBelow, uAppear;
+    uniform sampler2D uSil; uniform vec3 uBg; uniform vec2 uRes; uniform float uDpr, uStrip, uEdge, uFade, uRough, uDark, uTopY, uBotY, uFadeMode, uBelow, uAppear, uFadeStart, uCell;
     float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
     void main() {
       vec2 frag = gl_FragCoord.xy, uv = frag / uRes;
       // solid near the outline, thinning further out; the higher up the screen, the tighter it hugs the molecule
       float up = clamp(frag.y / uRes.y, 0.0, 1.0);
       float halo = smoothstep(0.03 + 0.3 * up, 0.34 + 0.24 * up, texture2D(uSil, uv).r);
-      if (uFadeMode > 0.5) { float y0 = mix(uBotY, uTopY, 0.42); halo *= 1.0 - 0.4 * smoothstep(0.6, 1.05, (frag.y - y0) / max(1.0, uTopY - y0)); }
+      if (uFadeMode > 0.5) { float y0 = mix(uBotY, uTopY, uFadeStart); halo *= 1.0 - 0.4 * smoothstep(0.6, 1.05, (frag.y - y0) / max(1.0, uTopY - y0)); }
       float fromBottom = frag.y / uDpr, fromTop = (uRes.y - frag.y) / uDpr;
       float strip = 1.0 - smoothstep(uStrip, uStrip + uEdge, fromBottom);
       float yMid = mix(uBotY, uTopY, 0.5);
@@ -535,7 +496,7 @@ const paperMat = new THREE.ShaderMaterial({
       if (cov <= 0.001) discard;
       if (cov < 0.999) {
         // halftone: a 45-degree screen like the print, dots shrinking toward each edge
-        vec2 p = mat2(0.7071, -0.7071, 0.7071, 0.7071) * frag / (6.5 * uDpr);
+        vec2 p = mat2(0.7071, -0.7071, 0.7071, 0.7071) * frag / (uCell * uDpr);
         vec2 cell = floor(p);
         float r = sqrt(cov) * 0.76 * (1.0 + (hash(cell) - 0.5) * 0.4 * uRough);
         if (hash(cell + 3.7) > cov + 0.35) discard;
@@ -700,7 +661,7 @@ const LIGHT = `
 // ---- 2. print: two-ink risograph halftone, slightly out of register, overprinting like real ink
 const risoUniforms = (ink, angle, offset, mode) => ({
   uInk: { value: new THREE.Color(ink) }, uAngle: { value: angle }, uOffset: { value: new THREE.Vector2(...offset) },
-  uCell: { value: 6.5 }, uDpr: { value: dpr }, uRes: { value: new THREE.Vector2(1, 1) }, uMode: { value: mode }, uRough: { value: 1 }, uFade: { value: 70 }, uWave: { value: 0 }, uTopY: { value: 1 }, uBotY: { value: 0 }, uFadeMode: { value: 3 }, uTime: { value: 0 }, uAppear: { value: 0 },
+  uCell: { value: phone ? 5.2 : 6.5 }, uDpr: { value: dpr }, uRes: { value: new THREE.Vector2(1, 1) }, uMode: { value: mode }, uRough: { value: 1 }, uFade: { value: 70 }, uWave: { value: 0 }, uTopY: { value: 1 }, uBotY: { value: 0 }, uFadeMode: { value: 3 }, uTime: { value: 0 }, uAppear: { value: 0 }, uBotFade: { value: 0 }, uFadeStart: { value: 0.42 },
 });
 const risoVert = `
   uniform vec2 uOffset, uRes; uniform float uRough, uWave, uTime;
@@ -712,13 +673,13 @@ const risoVert = `
     gl_Position.xy += (uOffset * uRough + drift * step(0.01, length(uOffset))) / uRes * 2.0 * gl_Position.w;   // misregistration, in pixels
   }`;
 const risoFrag = `
-  uniform vec3 uInk; uniform vec2 uRes; uniform float uAngle, uCell, uDpr, uMode, uRough, uFade, uTopY, uBotY, uFadeMode, uTime, uWave, uAppear;
+  uniform vec3 uInk; uniform vec2 uRes; uniform float uAngle, uCell, uDpr, uMode, uRough, uFade, uTopY, uBotY, uFadeMode, uTime, uWave, uAppear, uBotFade, uFadeStart;
   varying vec3 vN;
   ${LIGHT}
   float vnoise(vec2 x) { vec2 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
   // how far up the molecule's own height this point is: 0 in its lower part, 1 at its top
-  float hAt(float y) { float y0 = mix(uBotY, uTopY, 0.42); return clamp((y - y0) / max(1.0, uTopY - y0), 0.0, 1.0); }
+  float hAt(float y) { float y0 = mix(uBotY, uTopY, uFadeStart); return clamp((y - y0) / max(1.0, uTopY - y0), 0.0, 1.0); }
   void main() {
     vec3 n = normalize(vN);
     float lum = 0.12 + 0.88 * max(dot(n, L1), 0.0);
@@ -749,6 +710,11 @@ const risoFrag = `
     if (uFadeMode > 0.5 && uFadeMode < 1.5) {
       // ink-out: like the press running dry toward the top; dots shrink, then go missing
       float k = 1.0 - 0.7 * smoothstep(0.45, 1.0, h);      // a light touch: only the very top thins, and never quite to nothing
+      if (uBotFade > 0.5) {                                 // computers: the same at the bottom
+        float yb = mix(uTopY, uBotY, uFadeStart);
+        float hb = clamp((yb - gl_FragCoord.y) / max(1.0, yb - uBotY), 0.0, 1.0);
+        k *= 1.0 - 0.7 * smoothstep(0.45, 1.0, hb);
+      }
       cov *= k; fade *= mix(1.0, k, 0.4);
     } else if (uFadeMode > 1.5 && uFadeMode < 2.5) {
       // worn: blotchy patches lift away, like a well-used screen
@@ -856,30 +822,58 @@ placeAtoms(1); meshSurface(FINE); buildStipple();
 const foldCenters = resAtoms.map(list => list.reduce((s, a) => s.add(a.fold), new THREE.Vector3()).multiplyScalar(1 / list.length));
 
 // ---- apply the page's style to the scene
+let lastSize = document.documentElement.dataset.size;
 let pepMode = 'riso', motion = 'pan', rough = 1;
+const theme = { from: null, to: null, t0: 0, cur: null };
+function themeNow() { return theme.cur ? { bg: theme.cur.bg.clone(), ink: theme.cur.ink.clone(), mark: theme.cur.mark.clone(), dark: theme.cur.dark } : theme.to; }
+function tickTheme() {
+  if (!theme.to) return;
+  const A = theme.from, B = theme.to, age = performance.now() - theme.t0;
+  // follow the page's own CSS fade exactly: read the page colour the browser is showing right now
+  // (mid-transition it reports the in-between value), so the cover can never differ from the page
+  let bg, k;
+  if (reduceMotion || age > 700) { bg = B.bg.clone(); k = 1; }
+  else {
+    bg = new THREE.Color(getComputedStyle(document.body).backgroundColor).convertLinearToSRGB();
+    const dx = B.bg.r - A.bg.r, dy = B.bg.g - A.bg.g, dz = B.bg.b - A.bg.b, dd = dx * dx + dy * dy + dz * dz;
+    k = dd < 1e-6 ? 1 : clamp(((bg.r - A.bg.r) * dx + (bg.g - A.bg.g) * dy + (bg.b - A.bg.b) * dz) / dd);
+  }
+  if (theme.cur && theme.cur.k === 1 && k === 1 && theme.cur.to === theme.to) return;
+  const ink = A.ink.clone().lerp(B.ink, k), mark = A.mark.clone().lerp(B.mark, k);
+  const dark = k < 0.5 ? A.dark : B.dark;   // inks multiply like real overprinting on light paper; on a dark ground they're laid on top
+  paperMat.uniforms.uBg.value.copy(bg);
+  risoInkMat.uniforms.uInk.value.copy(ink); risoColorMat.uniforms.uInk.value.copy(mark);
+  stippleMat.uniforms.uInk.value.copy(ink); stippleMat.uniforms.uMark.value.copy(mark);
+  if (!theme.cur || theme.cur.dark !== dark) for (const m of [risoColorMat, risoInkMat]) m.blending = dark ? THREE.NormalBlending : THREE.MultiplyBlending;
+  theme.cur = { bg, ink, mark, dark, k, to: B };
+}
 function applyStyle() {
   pepMode = html.dataset.pep; motion = html.dataset.motion; rough = +html.dataset.rough;
   const fm = { off: 0, ink: 1, worn: 2, drift: 3 }[html.dataset.fade] ?? 1;
   for (const m of [risoColorMat, risoInkMat, paperMat]) m.uniforms.uFadeMode.value = fm;
+  risoColorMat.uniforms.uBotFade.value = risoInkMat.uniforms.uBotFade.value = phone ? 0 : 1;
+  // with the large peptide the fades start much nearer each end, so only the tips thin
+  const fs = !phone && html.dataset.size === 'large' ? 0.7 : 0.42;
+  for (const m of [risoColorMat, risoInkMat, paperMat]) m.uniforms.uFadeStart.value = fs;
   const bg = new THREE.Color(css('--bg')), ink = new THREE.Color(css('--ink')), mark = new THREE.Color(css('--mark')), mark2 = new THREE.Color(css('--mark-2'));
   const raw = c => c.clone().convertLinearToSRGB();   // these shaders output colour as-is
-  paperMat.uniforms.uBg.value.copy(raw(bg));
   renderer.setClearColor(0x000000, 0);
-  const dark = bg.getHSL({}).l < 0.4;
-  // inks multiply like real overprinting on light paper; on a dark ground they're laid on top
-  for (const m of [risoColorMat, risoInkMat]) { m.blending = dark ? THREE.NormalBlending : THREE.MultiplyBlending; m.needsUpdate = true; m.uniforms.uRough.value = 0.4 + rough * 0.6; }
-  risoInkMat.uniforms.uInk.value.copy(raw(ink));
-  risoColorMat.uniforms.uInk.value.copy(raw(mark));
-  stippleMat.uniforms.uInk.value.copy(raw(ink)); stippleMat.uniforms.uMark.value.copy(raw(mark)); stippleMat.uniforms.uRough.value = rough;
+  for (const m of [risoColorMat, risoInkMat]) m.uniforms.uRough.value = 0.4 + rough * 0.6;
+  stippleMat.uniforms.uRough.value = rough;
+  // the colours glide to the new theme over 0.4 s, in step with the page's own fade
+  const to = { bg: raw(bg), ink: raw(ink), mark: raw(mark), dark: bg.getHSL({}).l < 0.4 };
+  theme.from = theme.to ? themeNow() : to; theme.to = to; theme.t0 = performance.now();
+  tickTheme();
   glass.attenuationColor.copy(new THREE.Color(0xffffff).lerp(mark2, 0.35));
   liquid.visible = pepMode === 'glass';
   shadowCatcher.visible = false;
-  paperMat.uniforms.uDark.value = dark ? 1 : 0; paperMat.uniforms.uRough.value = rough;
+  paperMat.uniforms.uDark.value = to.dark ? 1 : 0; paperMat.uniforms.uRough.value = rough;
   depthOnly.visible = pepMode !== 'glass';
   risoColor.visible = risoInk.visible = pepMode === 'riso';
   stipple.visible = pepMode === 'stipple';
   ring.wob = rough;
   ring.key = '';   // redraw the ring in the new hand
+  if (typeof measure === 'function' && SW > 1 && lastSize !== html.dataset.size) { lastSize = html.dataset.size; measure(); }   // only when the size changed (resizing blanks the canvas)
 }
 
 // ---- sizing: the paper at z = 0 exactly fills the stage
@@ -898,11 +892,13 @@ function measure() {
   colCx = (cl + cw * 0.27) / SW;               // a little in from the column's centre, toward the middle of the page
   const colWorld = visW * (cw * 0.45) / SW;
   fitScale = phone ? Math.min(0.8 * visW / FOLD_LEN, 0.6 * visH / 15)
-                   : Math.min(0.86 * visH / FOLD_LEN, 0.62 * colWorld / 15);   // stood up, filling most of the window's height
+                   : Math.min(0.86 * visH / FOLD_LEN, 0.62 * colWorld / 15)    // stood up, filling most of the window's height
+                     * (html.dataset.size === 'large' ? 1.55 : 1);              // the "much larger" variant runs off the window, edge to edge
   for (const m of [risoColorMat, risoInkMat, paperMat]) m.uniforms.uRes.value.set(SW * dpr, SH * dpr);
   stippleMat.uniforms.uResY.value = SH;
-  paperMat.uniforms.uStrip.value = phone ? Math.max(70, SH * 0.24) : -200;   // the minimum solid strip along the bottom (phones only)
+  paperMat.uniforms.uStrip.value = phone ? Math.max(70, (SH - EXTRA) * 0.24) + EXTRA : -200;   // the minimum solid strip along the bottom (phones only)
   paperMat.uniforms.uBelow.value = phone ? 1 : 0;
+  paperMat.uniforms.uCell.value = phone ? 5.2 : 6.5;      // phones print on a finer screen
   const qw = Math.max(16, Math.round(SW / 4)), qh = Math.max(16, Math.round(SH / 4));
   for (const t of [silTarget, blurA, blurB]) t.setSize(qw, qh);
   sized = false;
@@ -925,7 +921,7 @@ const FRAMES = slides.map((el, i) => {
 // how far through the slides we are, as a continuous number: 0 = intro, 1 = first project ...
 function slidePos() {
   // the open space is between the top bar and the band; a project takes over as its text rises through it
-  const st = stageEl.getBoundingClientRect(), band = phone ? st.top + st.height * 0.45 : innerHeight * 0.62, head = bar.getBoundingClientRect().bottom, room = band - head;
+  const st = stageEl.getBoundingClientRect(), band = phone ? st.top + (st.height - EXTRA) * 0.45 : innerHeight * 0.62, head = bar.getBoundingClientRect().bottom, room = band - head;
   let s = 0;
   for (let i = 1; i < slides.length; i++) {
     const top = slides[i].getBoundingClientRect().top;
@@ -957,7 +953,7 @@ const tmp = new THREE.Vector3(), tgt = new THREE.Vector3(), off = new THREE.Vect
 let visible = false, start = null, sPrev = -1;
 const tailEl = document.querySelector('.tail'), portraitEl = document.querySelector('.portrait');
 let foldShown = 1, meshFine = true, lastMove = 0;
-let ufVel = 0;                               // the unfold follows a spring: gentle start, quick middle, soft landing                     // seconds, for a full unfold
+let ufVel = 0, fdShown = 0, fdVel = 0, frameNo = 0, spinAcc = 0;                               // the unfold follows a spring: gentle start, quick middle, soft landing                     // seconds, for a full unfold
 let ufShown = 0, lastFrame = null, aliveSince = null, appear = 0, heldOff = 0, lastNear = null, spinTarget = 0, spinOff = 0, spinVel = 0;
 const cam = { x: 0, y: 0, s: 1, tilt: 0, init: false };
 const finaleEl = document.getElementById('finale'), lettersEl = document.getElementById('letters');
@@ -967,7 +963,9 @@ const letterEls = [...NAME].map((ch, i) => { const el = document.createElement('
 function unfoldPos() {
   // measured in page scroll, and always finishing a little before the very bottom, so it can't stall partway
   const fy = finaleEl.getBoundingClientRect().top + scrollY, maxY = document.documentElement.scrollHeight - innerHeight;
-  const a = fy - innerHeight * 0.5, b = Math.min(maxY - 8, fy - innerHeight * 0.14);
+  const together = document.documentElement.dataset.unfold === 'together';
+  // together is scrubbed by scroll over a long window that starts as the ending's space first rises into view
+  const a = fy - innerHeight * (together ? 0.7 : 0.5), b = Math.min(maxY - 8, fy - innerHeight * (together ? 0.04 : 0.14));
   return smooth(Math.min(a, b - 40), b, scrollY);
 }
 new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { rootMargin: '200px 0px' }).observe(stageEl);
@@ -978,9 +976,9 @@ applyStyle();
 function placeFor(fr, s) {
   if (fr.sx === undefined) fr = { ...fr, sx: colCx + (fr.dx || 0) };   // computer frames sit in the left column
   rig.position.set(0, 0, HOVER); rig.scale.setScalar(s); rig.updateMatrixWorld(true);
-  if (!fr.res) { toWorld(fr.sx * SW, fr.sy * SH, HOVER, tgt); return off.set(tgt.x, tgt.y, 0).clone(); }
+  if (!fr.res) { toWorld(fr.sx * SW, fr.sy * (SH - EXTRA), HOVER, tgt); return off.set(tgt.x, tgt.y, 0).clone(); }
   tmp.copy(foldCenters[fr.res - 1]).applyMatrix4(mol.matrixWorld);
-  toWorld(fr.sx * SW, fr.sy * SH, tmp.z, tgt);
+  toWorld(fr.sx * SW, fr.sy * (SH - EXTRA), tmp.z, tgt);
   return new THREE.Vector3(tgt.x - tmp.x, tgt.y - tmp.y, 0);
 }
 
@@ -997,6 +995,7 @@ function frame(ms) {
     want = ph < innerHeight * 0.3 && tr.bottom > innerHeight * 0.35;   // position is the browser's job (sticky); this only grows and shrinks the dots
   }
   appear = reduceMotion ? (want ? 1 : 0) : appear + ((want ? 1 : 0) - appear) * (1 - Math.exp(-dt * 3));   // grow / shrink over ~0.8 s
+  tickTheme();
   if (!visible) return;
   if (!sized) { renderer.setPixelRatio(dpr); renderer.setSize(SW, SH, false); sized = true; }
   for (const m of [risoColorMat, risoInkMat, paperMat, stippleMat]) m.uniforms.uAppear.value = ease(clamp(appear));
@@ -1010,39 +1009,37 @@ function frame(ms) {
   const ufTarget = reduceMotion ? (unfoldPos() > 0.5 ? 1 : 0) : unfoldPos();
   if (ufTarget < ufShown || reduceMotion) { ufShown = ufTarget; ufVel = 0; }
   else {
-    const w = html.dataset.unfold === 'slow' ? 4 : 7.5;
+    const w = html.dataset.unfold === 'together' ? 6.5 : 7.5;   // together: tracks the scroll, but a hard flick still plays out over ~0.4 s   // together follows the scroll closely (just enough spring to stay smooth)
     for (let k = 0; k < 4; k++) { const h = dt / 4; ufVel += (w * w * (ufTarget - ufShown) - 2 * w * ufVel) * h; ufShown += ufVel * h; }
     if (ufShown > ufTarget) { ufShown = ufTarget; ufVel = 0; }
     if (ufTarget >= 1 && ufShown > 0.997) { ufShown = 1; ufVel = 0; }
   }
   const uf = ufShown;
   // how the ending is choreographed: mv = swinging flat and gliding to the centre, fd = the unfolding itself
-  //   move:    come forward first (still folded), then open in place at a steady size
-  //   open:    open where it is, then the straight chain swings flat and glides to the centre
-  //   upright: open where it is and stay upright; the name runs up beside it (phones: open in place)
-  //   slow:    everything together, on a slower spring
+  //   move:     come forward first (still folded), then open in place at a steady size
+  //   together: start moving; midway through the move it begins to open, finishing just after the move does
+  //   none:     glide to the centre still folded; the name appears above it
   const mode = html.dataset.unfold || 'move';
-  const upright = mode === 'upright' && !phone;
+  const upright = false;
   let mv, fd;
-  if (mode === 'move') { mv = ease(smooth(0, 0.32, uf)); fd = smooth(0.3, 1, uf); }
-  else if (mode === 'open') { fd = smooth(0, 0.66, uf); mv = ease(smooth(0.62, 1, uf)); }
-  else if (mode === 'upright') { fd = uf; mv = phone ? ease(smooth(0, 0.32, uf)) : 0; }
-  else { mv = ease(uf); fd = uf; }
+  if (mode === 'together') { mv = ease(smooth(0, 0.66, uf)); fd = smooth(0.33, 0.86, uf); }   // the move starts; midway through it the opening begins, and finishes just after the move
+  else if (mode === 'none') { mv = ease(uf); fd = 0; }
+  else { mv = ease(smooth(0, 0.32, uf)); fd = smooth(0.3, 1, uf); }
+  const lp = mode === 'none' ? smooth(0.35, 1, uf) : fd;      // how far the name has arrived
   const ue = mv;                                              // (the framing below follows the move)
   const zoom = lerp(A.zoom, B.zoom, f);
   const chainScale = (phone ? 0.86 : 0.56) * visW / CHAIN_LEN;
   const upScale = Math.min(0.64 * visH / CHAIN_LEN, fitScale * 1.2);   // a straight chain standing in the left column
   const sProj = fitScale * zoom;
   let s;
-  if (mode === 'open' && !phone) s = lerp(lerp(sProj, upScale, ease(fd)), chainScale, mv);
-  else if (upright) s = lerp(sProj, upScale, ease(fd));
-  else if (mode === 'open') s = lerp(sProj, chainScale, ease(fd));
+  if (mode === 'none') s = lerp(sProj, fitScale * (phone ? 1 : 0.62), mv);
   else s = lerp(sProj, chainScale, mv);
 
   // unfolding: the same fold, played backwards as you reach the end
   const t = 1 - fd;
   const alive = t < 0.001 && !reduceMotion;
-  if (alive) {
+  frameNo++;
+  if (alive && (!phone || frameNo % 2 === 0)) {          // (phones: the slow drift is rebuilt every other frame)
     // fully unfolded: the chain drifts like something in water. Layered rhythms per bead, so it never quite repeats
     placeAtoms(0);
     const k = smooth(0, 1.5, time - (aliveSince ??= time));
@@ -1052,8 +1049,9 @@ function frame(ms) {
       a.now.z += k * (0.32 * Math.cos(time * 0.61 - ph * 0.8) + 0.14 * Math.sin(time * 1.13 - ph * 2.1));
       a.now.x += k * 0.1 * Math.sin(time * 0.71 - ph * 1.3 + 0.6);
     }
-    meshSurface(0.6); meshFine = false; lastMove = time; foldShown = -1;
-  } else if (Math.abs(t - foldShown) > 2e-4) { aliveSince = null; placeAtoms(t); meshSurface(COARSE); meshFine = false; lastMove = time; foldShown = t; }
+    meshSurface(phone ? 0.85 : 0.6); meshFine = false; lastMove = time; foldShown = -1;
+  } else if (alive) { /* skipped frame: keep the last shape */ }
+  else if (Math.abs(t - foldShown) > 2e-4) { aliveSince = null; placeAtoms(t); meshSurface(phone ? 0.8 : COARSE); meshFine = false; lastMove = time; foldShown = t; }   // (a coarser grid on phones while it moves)
   else if (!meshFine && time - lastMove > 0.15) { meshSurface(FINE); meshFine = true; }
   if (stipple) stipple.visible = pepMode === 'stipple' && t > 0.999;          // dots are scattered on the folded shape only
   if (pepMode === 'stipple') risoInk.visible = t <= 0.999;
@@ -1067,7 +1065,9 @@ function frame(ms) {
   const nearNow = Math.round(sp);
   if (nearNow !== lastNear) { if (lastNear !== null && !phone && !reduceMotion && ufShown < 0.01) spinTarget += (nearNow > lastNear ? 1 : -1) * 0.52; lastNear = nearNow; }
   { const w = 7.5; for (let k = 0; k < 4; k++) { const h = dt / 4; spinVel += (w * w * (spinTarget - spinOff) - 2 * w * spinVel) * h; spinOff += spinVel * h; } }   // ~30 degrees, on a spring
-  spinner.rotation.x = -(0.6 + spinOff + (reduceMotion ? 0 : (time - start) * (pepMode === 'glass' ? 0.18 : 0.12)));
+  // the slow turn about its long axis: about a third as fast once the chain has opened (accumulated, so changing speed never jumps)
+  if (!reduceMotion) spinAcc += dt * (pepMode === 'glass' ? 0.18 : 0.12) * (1 - 0.65 * fd);
+  spinner.rotation.x = -(0.6 + spinOff + spinAcc);
   scene.updateMatrixWorld(true);
   const pa = placeFor(A, s), pb = placeFor(B, s);
   let px = lerp(pa.x, pb.x, f), py = lerp(pa.y, pb.y, f);
@@ -1085,7 +1085,7 @@ function frame(ms) {
   const topY = (yMax + 1) / 2 * SH * dpr + padPx, botY = (yMin + 1) / 2 * SH * dpr - padPx;
   for (const m of [risoColorMat, risoInkMat, paperMat]) { m.uniforms.uTopY.value = topY; m.uniforms.uBotY.value = botY; }
   risoColorMat.uniforms.uTime.value = risoInkMat.uniforms.uTime.value = reduceMotion ? 0 : time;
-  risoColorMat.uniforms.uWave.value = risoInkMat.uniforms.uWave.value = reduceMotion ? 0 : smooth(0.6, 1, fd);
+  risoColorMat.uniforms.uWave.value = risoInkMat.uniforms.uWave.value = reduceMotion ? 0 : smooth(0.6, 1, mode === 'none' ? lp : fd);
 
   // the ring: shown once a project is framed (or, when still, around the project in view)
   const near = Math.round(sp), settled = Math.abs(sp - near) < 0.18;
@@ -1093,19 +1093,20 @@ function frame(ms) {
   if (uf > 0.04) fr = null;
 
   // the letters: one over each bead, coming in left to right as the chain straightens
-  lettersEl.style.display = fd > 0.5 ? '' : 'none';
-  if (fd > 0.5) {
+  lettersEl.style.display = lp > 0.5 ? '' : 'none';
+  if (lp > 0.5) {
+    const molTop = SH - topY / dpr;                       // (none: keep the name clear of the folded molecule)
     const lift = 3.4 * s * SW / visW + 26;
     for (let i = 0; i < N_RES; i++) {
       tmp.set(0, 0, 0); for (const a of resAtoms[i]) tmp.add(a.chain);   // the straight chain's bead: the name holds still while the chain drifts
       tmp.multiplyScalar(1 / resAtoms[i].length).applyMatrix4(mol.matrixWorld).project(camera);
       const gap = (i < 4 ? -1 : 1) * Math.min(9, SW * 0.022);                         // a word gap between Eric and Fadeyev
       const bx = (tmp.x + 1) / 2 * SW, by = (1 - tmp.y) / 2 * SH;
-      const k = smooth(0.62 + i * 0.018, 0.8 + i * 0.018, fd) * (mode === 'open' && !phone ? smooth(0.55, 1, mv) : 1);   // (open-then-move: once it has swung flat)
+      const k = smooth(0.62 + i * 0.018, 0.8 + i * 0.018, lp);   // the last letter lands exactly as the chain straightens
       letterEls[i].style.opacity = k;
       letterEls[i].style.transform = upright
         ? `translate(${(bx + lift + (1 - k) * 10).toFixed(1)}px, ${(by - gap).toFixed(1)}px) translate(-50%, -50%) rotate(-90deg)`
-        : `translate(${(bx + gap).toFixed(1)}px, ${(by - lift + (1 - k) * 10).toFixed(1)}px) translate(-50%, -50%)`;
+        : `translate(${(bx + gap).toFixed(1)}px, ${((mode === 'none' ? Math.min(by - lift, molTop - 34) : by - lift) + (1 - k) * 10).toFixed(1)}px) translate(-50%, -50%)`;
     }
   }
   if (fr && fr.res) {
@@ -1148,7 +1149,7 @@ function frame(ms) {
 // with motion off, the ring follows whichever project's text is on screen
 function stillFocus() {
   let best = 0;
-  const st = stageEl.getBoundingClientRect(), band = phone ? st.top + st.height * 0.45 : innerHeight * 0.62, head = bar.getBoundingClientRect().bottom;
+  const st = stageEl.getBoundingClientRect(), band = phone ? st.top + (st.height - EXTRA) * 0.45 : innerHeight * 0.62, head = bar.getBoundingClientRect().bottom;
   slides.forEach((el, i) => { const r = el.getBoundingClientRect(); if (r.top < head + (band - head) * 0.55) best = i; });
   return best;
 }
