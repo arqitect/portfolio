@@ -146,11 +146,13 @@
   /* the peptide, pinned to the bottom of the screen. The stage itself is see-through: the canvas paints a
      page-coloured cover that hugs the molecule's outline (plus a solid strip along the bottom), and every
      edge of it is made of halftone dots that shrink to nothing, so words scrolling down break up into print */
-  /* (phones) the stage runs a fixed 110px below the bottom of the visible page: under Safari's bottom bar when it's showing,
-     off-screen when it isn't. The molecule is framed against the visible part, so it never shifts. */
-  .stage { position: sticky; bottom: -110px; z-index: 3; height: calc(clamp(320px, 52svh, 560px) + env(safe-area-inset-bottom, 0px) + 110px); margin: calc(-0.3 * clamp(320px, 52svh, 560px)) calc(-1 * var(--gutter)) 0; pointer-events: none; }
+  /* (phones) the stage sticks to the top of the screen and is a full screen tall, measured as the largest viewport
+     (100lvh), so its lower edge reaches the real bottom of the screen, under Safari's bottom bar. The molecule is
+     framed against the always-visible height (100svh), so it never shifts as the bar shows and hides. */
+  .stage { order: -1; position: sticky; top: 0; z-index: 3; height: 100vh; height: 100lvh; margin: 0 calc(-1 * var(--gutter)) -100vh; margin-bottom: -100lvh; pointer-events: none; }
   .stage .ring { z-index: 2; display: none; }   /* no circle or residue label */
-  .tail { position: relative; }
+  .tail { position: relative; display: flex; flex-direction: column; }
+  .svh-probe { position: fixed; top: 0; left: -10px; width: 1px; height: 100vh; height: 100svh; pointer-events: none; visibility: hidden; }
   .finale { height: 58svh; }
   [data-unfold="together"] .finale { height: 74svh; }   /* more room to scroll through it */
   /* the name, letter by letter above each bead once the chain has unfolded */
@@ -302,6 +304,7 @@
     </div>
   </section>
 
+  <div class="svh-probe" id="svhProbe" aria-hidden="true"></div>
   <div class="tail">
   <section class="work-sec" id="work" aria-labelledby="work-h">
     <div class="slide intro" data-focus="0">
@@ -419,7 +422,6 @@ let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch { throw new Error('no WebGL'); }
 const phone = matchMedia('(max-width: 859px)').matches;
 const dpr = Math.min(devicePixelRatio, phone ? 1.5 : 2);
-const EXTRA = phone ? 110 : 0;          // px of stage hanging below the visible page (under Safari's bar)
 
 // ---- structure prep: center, then lay the chain's end-to-end axis along +x
 const atoms = ATOMS.map(([res, name, el, x, y, z]) => ({ res, name, el, fold: new THREE.Vector3(x, y, z) }));
@@ -878,10 +880,12 @@ function applyStyle() {
 
 // ---- sizing: the paper at z = 0 exactly fills the stage
 const TAN15 = Math.tan(THREE.MathUtils.degToRad(15));
+let VS = 1, stTop = 0;                    // VS: the always-visible height the molecule is framed against (phones: 100svh)
 let SW = 1, SH = 1, visW = 100, visH = 100, D = 100, fitScale = 1, sized = false, colCx = 0.25;
 function measure() {
   const r = stageEl.getBoundingClientRect();
   SW = r.width; SH = r.height;
+  VS = phone ? Math.min(SH, document.getElementById('svhProbe').offsetHeight || innerHeight) : SH;
   visW = 100; visH = visW * SH / SW; D = visH / (2 * TAN15);
   camera.position.set(0, 0, D); camera.aspect = SW / SH; camera.far = D * 4;
   camera.updateProjectionMatrix(); camera.updateMatrixWorld();
@@ -891,12 +895,12 @@ function measure() {
   const cw = Math.min(SW - 80, 1280), cl = (SW - cw) / 2;
   colCx = (cl + cw * 0.27) / SW;               // a little in from the column's centre, toward the middle of the page
   const colWorld = visW * (cw * 0.45) / SW;
-  fitScale = phone ? Math.min(0.8 * visW / FOLD_LEN, 0.6 * visH / 15)
+  fitScale = phone ? 0.2 * (visW * VS / SW) / 15                                 // phones: sized by the screen's height (the molecule is ~15 Å thick)
                    : Math.min(0.86 * visH / FOLD_LEN, 0.62 * colWorld / 15)    // stood up, filling most of the window's height
                      * (html.dataset.size === 'large' ? 1.55 : 1);              // the "much larger" variant runs off the window, edge to edge
   for (const m of [risoColorMat, risoInkMat, paperMat]) m.uniforms.uRes.value.set(SW * dpr, SH * dpr);
   stippleMat.uniforms.uResY.value = SH;
-  paperMat.uniforms.uStrip.value = phone ? Math.max(70, (SH - EXTRA) * 0.24) + EXTRA : -200;   // the minimum solid strip along the bottom (phones only)
+  paperMat.uniforms.uStrip.value = phone ? (SH - VS) + Math.max(44, VS * 0.07) : -200;   // a slim solid strip at the bottom of the visible screen, and everything under Safari's bar (phones)
   paperMat.uniforms.uBelow.value = phone ? 1 : 0;
   paperMat.uniforms.uCell.value = phone ? 5.2 : 6.5;      // phones print on a finer screen
   const qw = Math.max(16, Math.round(SW / 4)), qh = Math.max(16, Math.round(SH / 4));
@@ -913,20 +917,21 @@ const toWorld = (sx, sy, z, out) => out.set((sx / SW - 0.5) * visW * (D - z) / D
 const slides = [...document.querySelectorAll('.slide')], bar = document.getElementById('bar');
 const FRAMES = slides.map((el, i) => {
   const r = +el.dataset.focus;
-  if (!r) return phone ? { res: 0, zoom: 1, sx: 0.5, sy: 0.86, tilt: -0.08 } : { res: 0, zoom: 1, dx: 0, sy: 0.5, tilt: Math.PI / 2 - 0.06 };
-  const side = [0.3, 0.7, 0.38][(i - 1) % 3];               // phones keep the big moves
-  if (!phone) return { res: r, zoom: 1.08, dx: 0, sy: [0.49, 0.51, 0.5][(i - 1) % 3], tilt: Math.PI / 2 + [0.02, -0.02, 0.01][(i - 1) % 3], label: el.dataset.label };
-  return { res: r, zoom: 1.8, sx: side, sy: 0.9, tilt: [0.18, -0.22, 0.1][(i - 1) % 3], label: el.dataset.label };
+  // one continuous pose: the tilt never changes between projects. On a phone the molecule glides along its own
+  // length, bringing each project's residue (R2, F5, Y9: left to right along the name) to the centre as you scroll
+  if (!r) return phone ? { res: 0, zoom: 1.05, sx: 0.5, sy: 0.84, tilt: -0.06 } : { res: 0, zoom: 1, dx: 0, sy: 0.5, tilt: Math.PI / 2 - 0.04 };
+  if (!phone) return { res: r, zoom: 1.08, dx: 0, sy: 0.5, tilt: Math.PI / 2 - 0.04, label: el.dataset.label };
+  // pan: how far toward centring the residue it slides (1 = all the way, so the far end juts well off-screen)
+  return { res: r, zoom: 1.5, sx: 0.5, sy: 0.84, pan: 0.85, tilt: -0.06, label: el.dataset.label };
 });
 // how far through the slides we are, as a continuous number: 0 = intro, 1 = first project ...
 function slidePos() {
   // the open space is between the top bar and the band; a project takes over as its text rises through it
-  const st = stageEl.getBoundingClientRect(), band = phone ? st.top + (st.height - EXTRA) * 0.45 : innerHeight * 0.62, head = bar.getBoundingClientRect().bottom, room = band - head;
+  // a long, continuous hand-off: a project starts taking over as its text reaches the molecule, and has fully
+  // taken over by the time it's three-quarters of the way up the open space
+  const lo = phone ? Math.max(0, stTop) + VS * 0.68 : innerHeight * 0.72, hi = bar.getBoundingClientRect().bottom + 10;
   let s = 0;
-  for (let i = 1; i < slides.length; i++) {
-    const top = slides[i].getBoundingClientRect().top;
-    s += smooth(band - 10, band - room * 0.3, top);     // a short, decisive hand-off from one project to the next
-  }
+  for (let i = 1; i < slides.length; i++) s += smooth(lo, hi + (lo - hi) * 0.25, slides[i].getBoundingClientRect().top);
   return s;
 }
 
@@ -974,11 +979,15 @@ applyStyle();
 
 // where the rig must sit, at scale s, so residue r lands on screen point (sx, sy)
 function placeFor(fr, s) {
+  if (fr.pan !== undefined) {                       // part-way between the whole molecule centred and the residue centred
+    const a = placeFor({ ...fr, res: 0, pan: undefined }, s), b = placeFor({ ...fr, pan: undefined }, s);
+    return a.lerp(b, fr.pan);
+  }
   if (fr.sx === undefined) fr = { ...fr, sx: colCx + (fr.dx || 0) };   // computer frames sit in the left column
   rig.position.set(0, 0, HOVER); rig.scale.setScalar(s); rig.updateMatrixWorld(true);
-  if (!fr.res) { toWorld(fr.sx * SW, fr.sy * (SH - EXTRA), HOVER, tgt); return off.set(tgt.x, tgt.y, 0).clone(); }
+  if (!fr.res) { toWorld(fr.sx * SW, fr.sy * VS - (fr.vp ? stTop : 0), HOVER, tgt); return off.set(tgt.x, tgt.y, 0).clone(); }
   tmp.copy(foldCenters[fr.res - 1]).applyMatrix4(mol.matrixWorld);
-  toWorld(fr.sx * SW, fr.sy * (SH - EXTRA), tmp.z, tgt);
+  toWorld(fr.sx * SW, fr.sy * VS - (fr.vp ? stTop : 0), tmp.z, tgt);
   return new THREE.Vector3(tgt.x - tmp.x, tgt.y - tmp.y, 0);
 }
 
@@ -989,7 +998,7 @@ function frame(ms) {
   // should the peptide be here? (a computer: once the photo in the same column has gone; a phone: once the work is on screen)
   const tr = tailEl.getBoundingClientRect();
   let want;
-  if (phone) want = tr.top < innerHeight * 0.85 && tr.bottom > 0;   // (on a phone the stage already scrolls with the page)
+  if (phone) want = tr.top < innerHeight * 0.2 && tr.bottom > innerHeight * 0.4;   // grows in as it scrolls up into view (the stage moves with the page)
   else {
     const ph = portraitEl.getBoundingClientRect().bottom;
     want = ph < innerHeight * 0.3 && tr.bottom > innerHeight * 0.35;   // position is the browser's job (sticky); this only grows and shrinks the dots
@@ -1001,9 +1010,10 @@ function frame(ms) {
   for (const m of [risoColorMat, risoInkMat, paperMat, stippleMat]) m.uniforms.uAppear.value = ease(clamp(appear));
   glass.opacity = 0.9 * clamp(appear);
 
-  // slides -> a blend of two framings
+  // slides -> a blend of two framings (sp is already eased, and continuous, so the blend is linear)
+  stTop = stageEl.getBoundingClientRect().top;
   const sp = motion === 'pan' ? slidePos() : 0;
-  const i0 = Math.min(Math.floor(sp), FRAMES.length - 1), i1 = Math.min(i0 + 1, FRAMES.length - 1), f = ease(sp - i0);
+  const i0 = Math.min(Math.floor(sp), FRAMES.length - 1), i1 = Math.min(i0 + 1, FRAMES.length - 1), f = sp - i0;
   const A = FRAMES[i0], B = FRAMES[i1];
   // unfolding follows a critically damped spring (an S-curve in time); folding back is immediate
   const ufTarget = reduceMotion ? (unfoldPos() > 0.5 ? 1 : 0) : unfoldPos();
@@ -1061,17 +1071,15 @@ function frame(ms) {
   const projTilt = lerp(A.tilt, B.tilt, f);
   cam.tilt = lerp(cam.tilt, upright ? lerp(projTilt, Math.PI / 2, smooth(0, 0.4, fd)) : lerp(projTilt, 0, ue), kf);
   outer.rotation.set(lerp(0.2, 0.08, ue), 0, cam.tilt);
-  // on a computer, a brief extra turn each time the project changes
-  const nearNow = Math.round(sp);
-  if (nearNow !== lastNear) { if (lastNear !== null && !phone && !reduceMotion && ufShown < 0.01) spinTarget += (nearNow > lastNear ? 1 : -1) * 0.52; lastNear = nearNow; }
-  { const w = 7.5; for (let k = 0; k < 4; k++) { const h = dt / 4; spinVel += (w * w * (spinTarget - spinOff) - 2 * w * spinVel) * h; spinOff += spinVel * h; } }   // ~30 degrees, on a spring
+  // the turn about its long axis follows the scroll, continuously (no per-project kicks)
+  spinOff = reduceMotion ? 0 : sp * (phone ? 0.75 : 0.5);
   // the slow turn about its long axis: about a third as fast once the chain has opened (accumulated, so changing speed never jumps)
   if (!reduceMotion) spinAcc += dt * (pepMode === 'glass' ? 0.18 : 0.12) * (1 - 0.65 * fd);
   spinner.rotation.x = -(0.6 + spinOff + spinAcc);
   scene.updateMatrixWorld(true);
   const pa = placeFor(A, s), pb = placeFor(B, s);
   let px = lerp(pa.x, pb.x, f), py = lerp(pa.y, pb.y, f);
-  if (ue > 0) { const pc = placeFor({ res: 0, sx: 0.5, sy: phone ? 0.66 : 0.56 }, s); px = lerp(px, pc.x, ue); py = lerp(py, pc.y, ue); }
+  if (ue > 0) { const pc = placeFor({ res: 0, sx: 0.5, sy: phone ? 0.5 : 0.56, vp: true }, s); px = lerp(px, pc.x, ue); py = lerp(py, pc.y, ue); }
   else if (upright && fd > 0) { const pc = placeFor({ res: 0, dx: 0, sy: 0.44 }, s); px = lerp(px, pc.x, ease(fd)); py = lerp(py, pc.y, ease(fd)); }
   cam.x = lerp(cam.x, px, kf); cam.y = lerp(cam.y, py, kf); cam.s = lerp(cam.s, s, kf); cam.init = true;
   rig.position.set(cam.x, cam.y, HOVER);
@@ -1090,7 +1098,7 @@ function frame(ms) {
   // the ring: shown once a project is framed (or, when still, around the project in view)
   const near = Math.round(sp), settled = Math.abs(sp - near) < 0.18;
   let fr = motion === 'pan' ? (settled ? FRAMES[near] : null) : FRAMES[stillFocus()];
-  if (uf > 0.04) fr = null;
+  fr = null;   // (the residue ring is retired)
 
   // the letters: one over each bead, coming in left to right as the chain straightens
   lettersEl.style.display = lp > 0.5 ? '' : 'none';
@@ -1144,12 +1152,20 @@ function frame(ms) {
   blurMat.uniforms.tMap.value = blurA.texture; blurMat.uniforms.uDir.value.set(0, step / silTarget.height);
   renderer.setRenderTarget(blurB); blurQuad.render(renderer);
   renderer.setRenderTarget(null);
-  renderer.render(scene, camera);
+  // only the band from the bottom of the canvas up to just above the molecule can hold anything: clear the
+  // whole canvas (cheap), then draw just that band
+  const bandPx = Math.min(SH, topY / dpr + BLUR_PX + 90);
+  // ...and never below the end of the work section: at the very end the full-height stage overhangs the footer
+  const clipPx = clamp(stTop + SH - tr.bottom, 0, SH);
+  renderer.setScissorTest(false); renderer.clear();
+  renderer.setScissorTest(true); renderer.setScissor(0, clipPx, SW, Math.max(0, bandPx - clipPx));
+  renderer.autoClear = false; renderer.render(scene, camera); renderer.autoClear = true;
+  renderer.setScissorTest(false);
 }
 // with motion off, the ring follows whichever project's text is on screen
 function stillFocus() {
   let best = 0;
-  const st = stageEl.getBoundingClientRect(), band = phone ? st.top + (st.height - EXTRA) * 0.45 : innerHeight * 0.62, head = bar.getBoundingClientRect().bottom;
+  const band = phone ? Math.max(0, stTop) + VS * 0.6 : innerHeight * 0.62, head = bar.getBoundingClientRect().bottom;
   slides.forEach((el, i) => { const r = el.getBoundingClientRect(); if (r.top < head + (band - head) * 0.55) best = i; });
   return best;
 }
