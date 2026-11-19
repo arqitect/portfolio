@@ -27,6 +27,7 @@
     d.dataset.motion = s.motion || 'pan';
     d.dataset.rough = s.rough || '1';
     d.dataset.fade = s.fade || 'ink';
+    d.dataset.unfold = s.unfold || 'move';
     d.classList.add('js');
   })();
   // the browser chrome takes the page colour too
@@ -79,10 +80,10 @@
   /* ---- top bar */
   .bar { position: fixed; z-index: 40; inset: 0 0 auto 0; padding-top: env(safe-area-inset-top, 0px); background: linear-gradient(to bottom, var(--bg) 0%, var(--bg) 35%, color-mix(in srgb, var(--bg) 35%, transparent) 100%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid transparent; transition: border-color .3s, background-color .4s; }
   .bar::before { content: ""; position: absolute; inset: 0 0 -1px 0; z-index: -1; background-image: var(--grain); pointer-events: none; }
-  .in-bar { max-width: 1040px; margin: 0 auto; height: var(--bar-h); padding: 0 max(16px, env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .in-bar { max-width: 1040px; margin: 0 auto; height: var(--bar-h); padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left)); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .brand { font-family: var(--display); font-weight: var(--display-w); text-decoration: none; font-size: 20px; line-height: 1; white-space: nowrap; opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .3s; pointer-events: none; }
   .bar.named .brand { opacity: 1; transform: none; pointer-events: auto; }
-  .bar nav { display: flex; align-items: center; gap: 16px; font-family: var(--mono); font-size: 12px; letter-spacing: .02em; }
+  .bar nav { display: flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 12px; letter-spacing: .02em; }
   .bar nav a { color: var(--ink-2); text-decoration: none; padding: 16px 0; }
   .bar nav a:focus-visible { color: var(--mark); text-decoration: underline; text-underline-offset: 4px; }
   .bar nav .wide { display: none; }
@@ -96,7 +97,7 @@
   .menu h4 { margin: 0 0 8px; font: 500 10.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
   .menu .grp + .grp { margin-top: 16px; }
   .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; padding: 3px; border: 1px solid var(--rule); border-radius: 10px; }
-  .seg button { min-height: 38px; border: 0; border-radius: 7px; background: transparent; color: var(--ink-2); font: 12.5px var(--mono); cursor: pointer; }
+  .seg button { min-height: 38px; line-height: 1.2; padding: 4px 2px; border: 0; border-radius: 7px; background: transparent; color: var(--ink-2); font: 12.5px var(--mono); cursor: pointer; }
   .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
   .swatches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .swatches button { display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 10px; border: 1px solid var(--rule); border-radius: 10px; background: transparent; color: var(--ink-2); font: 12px var(--mono); cursor: pointer; text-align: left; }
@@ -137,7 +138,7 @@
   /* the peptide, pinned to the bottom of the screen. The stage itself is see-through: the canvas paints a
      page-coloured cover that hugs the molecule's outline (plus a solid strip along the bottom), and every
      edge of it is made of halftone dots that shrink to nothing, so words scrolling down break up into print */
-  .stage { position: sticky; bottom: 0; z-index: 3; height: calc(clamp(320px, 52svh, 560px) + env(safe-area-inset-bottom, 0px)); margin: calc(-0.3 * clamp(320px, 52svh, 560px)) calc(-1 * var(--gutter)) 0; pointer-events: none; }
+  .stage { position: sticky; bottom: 0; bottom: calc(100dvh - 100lvh); z-index: 3; height: calc(clamp(320px, 52svh, 560px) + env(safe-area-inset-bottom, 0px)); height: calc(clamp(320px, 52svh, 560px) + env(safe-area-inset-bottom, 0px) + 100lvh - 100dvh); margin: calc(-0.3 * clamp(320px, 52svh, 560px)) calc(-1 * var(--gutter)) 0; pointer-events: none; }
   .stage .ring { z-index: 2; }
   .tail { position: relative; }
   .finale { height: 58svh; }
@@ -220,10 +221,11 @@
     :root { --gutter: 40px; --cw: min(calc(100vw - 2 * var(--gutter)), 1280px); --cl: calc((100vw - var(--cw)) / 2); }
     body { font-size: 19px; }
     .bar nav .wide { display: inline; }
+    .bar nav { gap: 16px; }
     .in-bar { max-width: calc(var(--cw) + 2 * var(--gutter)); padding: 0 var(--gutter); }   /* both edges on the page grid */
     .wrap { max-width: calc(var(--cw) + 2 * var(--gutter)); }
     .hero { grid-template-columns: 45fr 48fr; column-gap: 7%; align-items: center; min-height: calc(100vh - var(--bar-h) - 40px); }
-    .hero-text { display: block; max-width: 560px; }
+    .hero-text { display: block; }                 /* the words run to the grid's right edge, under the bar's */
     h1 { order: 0; margin: 0 0 22px; font-size: clamp(64px, 6.4vw, 96px); }
     .portrait { aspect-ratio: 4 / 5; margin: 0; max-height: calc(100vh - var(--bar-h) - 96px); justify-self: stretch; }
     /* the peptide's stage covers the window; the molecule is framed in the left column, shown only while
@@ -237,13 +239,13 @@
     .tail { margin: 0 calc(50% - 50vw); padding: 0 var(--cl) 0 calc(var(--cl) + var(--cw) * 0.52); }
     .work-sec { margin-top: 96px; }
     .work-sec .sec-label { margin-bottom: 0; }
-    .slide { max-width: 560px; min-height: 66vh; display: flex; align-items: center; padding: 36px 0; }
+    .slide { max-width: none; min-height: 66vh; display: flex; align-items: center; padding: 36px 0; }
     .slide.intro { min-height: 0; display: block; }
     .item h3 { font-size: clamp(44px, 4.4vw, 64px); }
     .item p { font-size: 19.5px; }
     .item .why { font-size: 16.5px; }
     .finale { height: 52vh; }
-    .off-sec { margin: 0; padding: 0; max-width: 560px; }
+    .off-sec { margin: 0; padding: 0; max-width: none; }
     footer { margin: 0; padding-left: 0; padding-right: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -288,6 +290,9 @@
   </div></div>
   <div class="grp"><h4>Motion</h4><div class="seg" data-key="motion">
     <button data-v="pan">Zoom &amp; glide</button><button data-v="still">Still</button>
+  </div></div>
+  <div class="grp"><h4>Unfold</h4><div class="seg" data-key="unfold">
+    <button data-v="move">Move, then open</button><button data-v="open">Open, then move</button><button data-v="upright">Upright</button><button data-v="slow">Slow</button>
   </div></div>
   <div class="grp"><h4>Fade at the top</h4><div class="seg" data-key="fade">
     <button data-v="off">None</button><button data-v="ink">Ink-out</button><button data-v="worn">Worn</button><button data-v="drift">Drift</button>
@@ -401,7 +406,7 @@
   }, { rootMargin: '0px 0px -6% 0px' });
   document.querySelectorAll('.rv').forEach(el => rvObs.observe(el));
 
-  const DEFAULTS = { palette: 'oat', type: 'editorial', pep: 'riso', motion: 'pan', rough: '1', fade: 'ink' };
+  const DEFAULTS = { palette: 'oat', type: 'editorial', pep: 'riso', motion: 'pan', rough: '1', fade: 'ink', unfold: 'move' };
   const menu = document.getElementById('menu'), styleBtn = document.getElementById('styleBtn');
   function current() { const o = {}; for (const k in DEFAULTS) o[k] = html.dataset[k]; return o; }
   function sync() {
@@ -953,7 +958,7 @@ let visible = false, start = null, sPrev = -1;
 const tailEl = document.querySelector('.tail'), portraitEl = document.querySelector('.portrait');
 let foldShown = 1, meshFine = true, lastMove = 0;
 let ufVel = 0;                               // the unfold follows a spring: gentle start, quick middle, soft landing                     // seconds, for a full unfold
-let ufShown = 0, lastFrame = null, aliveSince = null, appear = 0, heldOff = 0;
+let ufShown = 0, lastFrame = null, aliveSince = null, appear = 0, heldOff = 0, lastNear = null, spinTarget = 0, spinOff = 0, spinVel = 0;
 const cam = { x: 0, y: 0, s: 1, tilt: 0, init: false };
 const finaleEl = document.getElementById('finale'), lettersEl = document.getElementById('letters');
 const NAME = 'ERICFADEYEV', CODES = ['Glu','Arg','Ile','Cys','Phe','Ala','Asp','Glu','Tyr','Glu','Val'];
@@ -1005,18 +1010,37 @@ function frame(ms) {
   const ufTarget = reduceMotion ? (unfoldPos() > 0.5 ? 1 : 0) : unfoldPos();
   if (ufTarget < ufShown || reduceMotion) { ufShown = ufTarget; ufVel = 0; }
   else {
-    const w = 7.5;
+    const w = html.dataset.unfold === 'slow' ? 4 : 7.5;
     for (let k = 0; k < 4; k++) { const h = dt / 4; ufVel += (w * w * (ufTarget - ufShown) - 2 * w * ufVel) * h; ufShown += ufVel * h; }
     if (ufShown > ufTarget) { ufShown = ufTarget; ufVel = 0; }
     if (ufTarget >= 1 && ufShown > 0.997) { ufShown = 1; ufVel = 0; }
   }
-  const uf = ufShown, ue = ease(uf);
+  const uf = ufShown;
+  // how the ending is choreographed: mv = swinging flat and gliding to the centre, fd = the unfolding itself
+  //   move:    come forward first (still folded), then open in place at a steady size
+  //   open:    open where it is, then the straight chain swings flat and glides to the centre
+  //   upright: open where it is and stay upright; the name runs up beside it (phones: open in place)
+  //   slow:    everything together, on a slower spring
+  const mode = html.dataset.unfold || 'move';
+  const upright = mode === 'upright' && !phone;
+  let mv, fd;
+  if (mode === 'move') { mv = ease(smooth(0, 0.32, uf)); fd = smooth(0.3, 1, uf); }
+  else if (mode === 'open') { fd = smooth(0, 0.66, uf); mv = ease(smooth(0.62, 1, uf)); }
+  else if (mode === 'upright') { fd = uf; mv = phone ? ease(smooth(0, 0.32, uf)) : 0; }
+  else { mv = ease(uf); fd = uf; }
+  const ue = mv;                                              // (the framing below follows the move)
   const zoom = lerp(A.zoom, B.zoom, f);
   const chainScale = (phone ? 0.86 : 0.56) * visW / CHAIN_LEN;
-  const s = lerp(fitScale * zoom, chainScale, ue);
+  const upScale = Math.min(0.64 * visH / CHAIN_LEN, fitScale * 1.2);   // a straight chain standing in the left column
+  const sProj = fitScale * zoom;
+  let s;
+  if (mode === 'open' && !phone) s = lerp(lerp(sProj, upScale, ease(fd)), chainScale, mv);
+  else if (upright) s = lerp(sProj, upScale, ease(fd));
+  else if (mode === 'open') s = lerp(sProj, chainScale, ease(fd));
+  else s = lerp(sProj, chainScale, mv);
 
   // unfolding: the same fold, played backwards as you reach the end
-  const t = 1 - uf;
+  const t = 1 - fd;
   const alive = t < 0.001 && !reduceMotion;
   if (alive) {
     // fully unfolded: the chain drifts like something in water. Layered rhythms per bead, so it never quite repeats
@@ -1035,14 +1059,20 @@ function frame(ms) {
   if (pepMode === 'stipple') risoInk.visible = t <= 0.999;
 
   // every framing change eases in, so nothing ever jumps (unfolding keeps its own timing)
-  const kf = cam.init ? 1 - Math.exp(-dt * (ue > 0.01 ? 12 : 14)) : 1;   // quick, but never a jump
-  cam.tilt = lerp(cam.tilt, lerp(lerp(A.tilt, B.tilt, f), 0, ue), kf);
+  const kf = cam.init ? 1 - Math.exp(-dt * (uf > 0.01 ? 18 : 14)) : 1;   // quick, but never a jump
+  const projTilt = lerp(A.tilt, B.tilt, f);
+  cam.tilt = lerp(cam.tilt, upright ? lerp(projTilt, Math.PI / 2, smooth(0, 0.4, fd)) : lerp(projTilt, 0, ue), kf);
   outer.rotation.set(lerp(0.2, 0.08, ue), 0, cam.tilt);
-  spinner.rotation.x = -(0.6 + (reduceMotion ? 0 : (time - start) * (pepMode === 'glass' ? 0.18 : 0.12)));
+  // on a computer, a brief extra turn each time the project changes
+  const nearNow = Math.round(sp);
+  if (nearNow !== lastNear) { if (lastNear !== null && !phone && !reduceMotion && ufShown < 0.01) spinTarget += (nearNow > lastNear ? 1 : -1) * 0.52; lastNear = nearNow; }
+  { const w = 7.5; for (let k = 0; k < 4; k++) { const h = dt / 4; spinVel += (w * w * (spinTarget - spinOff) - 2 * w * spinVel) * h; spinOff += spinVel * h; } }   // ~30 degrees, on a spring
+  spinner.rotation.x = -(0.6 + spinOff + (reduceMotion ? 0 : (time - start) * (pepMode === 'glass' ? 0.18 : 0.12)));
   scene.updateMatrixWorld(true);
   const pa = placeFor(A, s), pb = placeFor(B, s);
   let px = lerp(pa.x, pb.x, f), py = lerp(pa.y, pb.y, f);
   if (ue > 0) { const pc = placeFor({ res: 0, sx: 0.5, sy: phone ? 0.66 : 0.56 }, s); px = lerp(px, pc.x, ue); py = lerp(py, pc.y, ue); }
+  else if (upright && fd > 0) { const pc = placeFor({ res: 0, dx: 0, sy: 0.44 }, s); px = lerp(px, pc.x, ease(fd)); py = lerp(py, pc.y, ease(fd)); }
   cam.x = lerp(cam.x, px, kf); cam.y = lerp(cam.y, py, kf); cam.s = lerp(cam.s, s, kf); cam.init = true;
   rig.position.set(cam.x, cam.y, HOVER);
   rig.scale.setScalar(cam.s);
@@ -1055,7 +1085,7 @@ function frame(ms) {
   const topY = (yMax + 1) / 2 * SH * dpr + padPx, botY = (yMin + 1) / 2 * SH * dpr - padPx;
   for (const m of [risoColorMat, risoInkMat, paperMat]) { m.uniforms.uTopY.value = topY; m.uniforms.uBotY.value = botY; }
   risoColorMat.uniforms.uTime.value = risoInkMat.uniforms.uTime.value = reduceMotion ? 0 : time;
-  risoColorMat.uniforms.uWave.value = risoInkMat.uniforms.uWave.value = reduceMotion ? 0 : smooth(0.6, 1, uf);
+  risoColorMat.uniforms.uWave.value = risoInkMat.uniforms.uWave.value = reduceMotion ? 0 : smooth(0.6, 1, fd);
 
   // the ring: shown once a project is framed (or, when still, around the project in view)
   const near = Math.round(sp), settled = Math.abs(sp - near) < 0.18;
@@ -1063,17 +1093,19 @@ function frame(ms) {
   if (uf > 0.04) fr = null;
 
   // the letters: one over each bead, coming in left to right as the chain straightens
-  lettersEl.style.display = uf > 0.5 ? '' : 'none';
-  if (uf > 0.5) {
+  lettersEl.style.display = fd > 0.5 ? '' : 'none';
+  if (fd > 0.5) {
     const lift = 3.4 * s * SW / visW + 26;
     for (let i = 0; i < N_RES; i++) {
       tmp.set(0, 0, 0); for (const a of resAtoms[i]) tmp.add(a.chain);   // the straight chain's bead: the name holds still while the chain drifts
       tmp.multiplyScalar(1 / resAtoms[i].length).applyMatrix4(mol.matrixWorld).project(camera);
-      const x = (tmp.x + 1) / 2 * SW + (i < 4 ? -1 : 1) * Math.min(9, SW * 0.022), y = (1 - tmp.y) / 2 * SH - lift;   // a word gap between Eric and Fadeyev
-      const k = smooth(0.62 + i * 0.018, 0.8 + i * 0.018, uf);   // the last letter lands exactly as the chain straightens
+      const gap = (i < 4 ? -1 : 1) * Math.min(9, SW * 0.022);                         // a word gap between Eric and Fadeyev
+      const bx = (tmp.x + 1) / 2 * SW, by = (1 - tmp.y) / 2 * SH;
+      const k = smooth(0.62 + i * 0.018, 0.8 + i * 0.018, fd) * (mode === 'open' && !phone ? smooth(0.55, 1, mv) : 1);   // (open-then-move: once it has swung flat)
       letterEls[i].style.opacity = k;
-      const bob = 0;   // the letters already ride their beads as the chain moves
-      letterEls[i].style.transform = `translate(${x.toFixed(1)}px, ${(y + (1 - k) * 10 + bob).toFixed(1)}px) translate(-50%, -50%)`;
+      letterEls[i].style.transform = upright
+        ? `translate(${(bx + lift + (1 - k) * 10).toFixed(1)}px, ${(by - gap).toFixed(1)}px) translate(-50%, -50%) rotate(-90deg)`
+        : `translate(${(bx + gap).toFixed(1)}px, ${(by - lift + (1 - k) * 10).toFixed(1)}px) translate(-50%, -50%)`;
     }
   }
   if (fr && fr.res) {
