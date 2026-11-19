@@ -70,7 +70,6 @@
   [data-type="modern"] .lede, [data-type="modern"] .work p { font-weight: 400; }
 
   * { box-sizing: border-box; }
-  /* no sideways drag: nothing is allowed to reach past the screen edges (no overflow tricks needed) */
   html { overscroll-behavior-x: none; }
   html { background: var(--bg) var(--grain); -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; transition: background-color .4s; }
   body { margin: 0; background: var(--bg) var(--grain); color: var(--ink); font-family: var(--text); font-size: 18px; line-height: 1.55; -webkit-font-smoothing: antialiased; transition: background-color .4s, color .4s; }
@@ -148,9 +147,8 @@
   /* the peptide, pinned to the bottom of the screen. The stage itself is see-through: the canvas paints a
      page-coloured cover that hugs the molecule's outline (plus a solid strip along the bottom), and every
      edge of it is made of halftone dots that shrink to nothing, so words scrolling down break up into print */
-  /* (phones) the peptide is drawn on a plain fixed layer covering the whole screen. Its height is the largest viewport
-     (100lvh), so it reaches the real bottom of the screen, under Safari's bottom bar; the molecule is framed against
-     the always-visible height (100svh), so it never shifts as the bar shows and hides. Nothing about it can widen the page. */
+  /* The phone canvas reaches under Safari's toolbar (100lvh). Framing and scroll cues use
+     the small viewport (100svh) so the toolbar can move without shifting the choreography. */
   .stage { position: fixed; left: 0; right: 0; top: 0; height: 100vh; height: 100lvh; z-index: 3; pointer-events: none; }
   .stage .ring { z-index: 2; display: none; }   /* no circle or residue label */
   .tail { position: relative; display: flex; flex-direction: column; }
@@ -218,6 +216,15 @@
     .btn:hover { background: var(--mark); border-color: var(--mark); color: #fff; }
     .links a:hover { color: var(--mark); text-decoration-color: var(--mark); }
     .item a:hover { color: var(--mark); }
+  }
+  @media (width < 860px) {
+    html { overflow-x: clip; }
+    .hero { grid-template-columns: minmax(0, 1fr); }
+    .btns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .btn { padding-inline: clamp(8px, 3vw, 18px); gap: 6px; }
+    .in-bar, .bar nav { gap: clamp(6px, calc(6vw - 12px), 12px); }
+    .brand { font-size: clamp(16px, 5.2vw, 20px); }
+    .stage { overflow: hidden; }  /* transformed finale letters stay inside the fixed layer */
   }
   @media (min-width: 860px) {
     /* one grid for the whole page, up to 1280px wide: pictures on the left 45% (the photo, then the
@@ -420,8 +427,9 @@ const stageEl = document.getElementById('stage');
 const canvas = document.getElementById('gl');
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch { throw new Error('no WebGL'); }
-const phone = matchMedia('(max-width: 859px)').matches;
-const dpr = Math.min(devicePixelRatio, phone ? 1.5 : 2);
+const phoneQuery = matchMedia('(width < 860px)');
+let phone = phoneQuery.matches;
+let dpr = Math.min(devicePixelRatio, phone ? 1.5 : 2);
 
 // ---- structure prep: center, then lay the chain's end-to-end axis along +x
 const atoms = ATOMS.map(([res, name, el, x, y, z]) => ({ res, name, el, fold: new THREE.Vector3(x, y, z) }));
@@ -853,10 +861,6 @@ function applyStyle() {
   pepMode = html.dataset.pep; motion = html.dataset.motion; rough = +html.dataset.rough;
   const fm = { off: 0, ink: 1, worn: 2, drift: 3 }[html.dataset.fade] ?? 1;
   for (const m of [risoColorMat, risoInkMat, paperMat]) m.uniforms.uFadeMode.value = fm;
-  risoColorMat.uniforms.uBotFade.value = risoInkMat.uniforms.uBotFade.value = phone ? 0 : 1;
-  // with the large peptide the fades start much nearer each end, so only the tips thin
-  const fs = !phone && html.dataset.size === 'large' ? 0.7 : 0.42;
-  for (const m of [risoColorMat, risoInkMat, paperMat]) m.uniforms.uFadeStart.value = fs;
   const bg = new THREE.Color(css('--bg')), ink = new THREE.Color(css('--ink')), mark = new THREE.Color(css('--mark')), mark2 = new THREE.Color(css('--mark-2'));
   const raw = c => c.clone().convertLinearToSRGB();   // these shaders output colour as-is
   renderer.setClearColor(0x000000, 0);
@@ -881,12 +885,15 @@ function applyStyle() {
 // ---- sizing: the paper at z = 0 exactly fills the stage
 const TAN15 = Math.tan(THREE.MathUtils.degToRad(15));
 let VS = 1, stTop = 0;
-const tailEl = document.querySelector('.tail'), portraitEl = document.querySelector('.portrait');                    // VS: the always-visible height the molecule is framed against (phones: 100svh)
+const tailEl = document.querySelector('.tail'), portraitEl = document.querySelector('.portrait');
+const svhProbe = document.getElementById('svhProbe');
 let SW = 1, SH = 1, visW = 100, visH = 100, D = 100, fitScale = 1, sized = false, colCx = 0.25;
 function measure() {
+  phone = phoneQuery.matches;
+  dpr = Math.min(devicePixelRatio, phone ? 1.5 : 2);
   const r = stageEl.getBoundingClientRect();
   SW = r.width; SH = r.height;
-  VS = phone ? Math.min(SH, document.getElementById('svhProbe').offsetHeight || innerHeight) : SH;
+  VS = phone ? Math.min(SH, svhProbe.offsetHeight || innerHeight) : SH;
   visW = 100; visH = visW * SH / SW; D = visH / (2 * TAN15);
   camera.position.set(0, 0, D); camera.aspect = SW / SH; camera.far = D * 4;
   camera.updateProjectionMatrix(); camera.updateMatrixWorld();
@@ -899,8 +906,16 @@ function measure() {
   fitScale = phone ? 0.245 * (visW * VS / SW) / 15                                 // phones: sized by the screen's height (the molecule is ~15 Å thick)
                    : Math.min(0.86 * visH / FOLD_LEN, 0.62 * colWorld / 15)    // stood up, filling most of the window's height
                      * (html.dataset.size === 'large' ? 1.55 : 1);              // the "much larger" variant runs off the window, edge to edge
-  for (const m of [risoColorMat, risoInkMat, paperMat]) m.uniforms.uRes.value.set(SW * dpr, SH * dpr);
+  for (const m of [risoColorMat, risoInkMat, paperMat]) {
+    m.uniforms.uRes.value.set(SW * dpr, SH * dpr);
+    m.uniforms.uDpr.value = dpr;
+    // With the large desktop peptide, fade only the tips.
+    m.uniforms.uFadeStart.value = !phone && html.dataset.size === 'large' ? 0.7 : 0.42;
+  }
+  risoColorMat.uniforms.uBotFade.value = risoInkMat.uniforms.uBotFade.value = phone ? 0 : 1;
+  risoColorMat.uniforms.uCell.value = risoInkMat.uniforms.uCell.value = phone ? 5.2 : 6.5;
   stippleMat.uniforms.uResY.value = SH;
+  stippleMat.uniforms.uDpr.value = dpr;
   paperMat.uniforms.uStrip.value = phone ? (SH - VS) + Math.max(44, VS * 0.07) : -200;   // a slim solid strip at the bottom of the visible screen, and everything under Safari's bar (phones)
   paperMat.uniforms.uBelow.value = phone ? 1 : 0;
   paperMat.uniforms.uCell.value = phone ? 5.2 : 6.5;      // phones print on a finer screen
@@ -908,8 +923,10 @@ function measure() {
   for (const t of [silTarget, blurA, blurB]) t.setSize(qw, qh);
   sized = false;
 }
-new ResizeObserver(measure).observe(stageEl);
-new ResizeObserver(() => measureLayout && measureLayout()).observe(document.body);
+const stageObserver = new ResizeObserver(measure);
+stageObserver.observe(stageEl);
+stageObserver.observe(svhProbe);
+phoneQuery.addEventListener('change', measure);
 measure();
 // a point on screen (CSS px within the stage) lifted to height z above the paper
 const toWorld = (sx, sy, z, out) => out.set((sx / SW - 0.5) * visW * (D - z) / D, (0.5 - sy / SH) * visH * (D - z) / D, z);
@@ -917,7 +934,7 @@ const toWorld = (sx, sy, z, out) => out.set((sx / SW - 0.5) * visW * (D - z) / D
 // ---- framing for each slide: the whole molecule, then close on each project's residue, each
 //      time from a different side of the screen, so it travels across the page as you scroll
 const slides = [...document.querySelectorAll('.slide')], bar = document.getElementById('bar');
-const FRAMES = slides.map((el, i) => {
+const framesFor = phone => slides.map(el => {
   const r = +el.dataset.focus;
   // one continuous pose: the tilt never changes between projects. On a phone the molecule glides along its own
   // length, bringing each project's residue (R2, F5, Y9: left to right along the name) to the centre as you scroll
@@ -926,32 +943,22 @@ const FRAMES = slides.map((el, i) => {
   // pan: how far toward centring the residue it slides (1 = all the way, so the far end juts well off-screen)
   return { res: r, zoom: 1.5, sx: 0.5, sy: 0.885, pan: 0.85, tilt: -0.06, label: el.dataset.label };
 });
-// how far through the slides we are, as a continuous number: 0 = intro, 1 = first project ...
-// (phones) where the pieces sit on the page, measured when the layout changes rather than every frame
-const layout = { slides: [], workTop: 0, tailBottom: 0 };
-function measureLayout() {
-  const y = scrollY;
-  layout.slides = slides.map(el => el.getBoundingClientRect().top + y);
-  layout.workTop = document.querySelector('.work-sec').getBoundingClientRect().top + y;
-  layout.tailBottom = tailEl.getBoundingClientRect().bottom + y;
-}
-measureLayout();
-addEventListener('load', measureLayout);
-document.fonts && document.fonts.ready.then(measureLayout);
+const phoneFrames = framesFor(true), desktopFrames = framesFor(false);
+
+// 0 = intro, 1 = first project and so on, blending between adjacent framings.
 function slidePos() {
-  if (phone) {
-    // a project takes over as its top scrolls from 62% to 30% of the way down the visible screen
-    let s = 0;
-    for (let i = 1; i < layout.slides.length; i++) s += smooth(layout.slides[i] - VS * 0.62, layout.slides[i] - VS * 0.3, scrollY);
-    return s;
-  }
-  // the open space is between the top bar and the band; a project takes over as its text rises through it
-  // a long, continuous hand-off: a project starts taking over as its text reaches the molecule, and has fully
-  // taken over by the time it's three-quarters of the way up the open space
-  const top0 = phone ? Math.max(0, stTop) : 0, H = phone ? VS : innerHeight;
-  const lo = top0 + H * (phone ? 0.62 : 0.72), hi = top0 + H * (phone ? 0.3 : 0.36);
   let s = 0;
-  for (let i = 1; i < slides.length; i++) s += smooth(lo, hi, slides[i].getBoundingClientRect().top);
+  for (let i = 1; i < slides.length; i++) {
+    const slide = slides[i];
+    const top = slide.getBoundingClientRect().top;
+    if (phone) {
+      // Follow the article's actual start, including the slide's top padding.
+      const articleTop = top + slide.firstElementChild.offsetTop;
+      s += smooth(VS * 0.72, VS * 0.42, articleTop);
+    } else {
+      s += smooth(innerHeight * 0.72, innerHeight * 0.36, top);
+    }
+  }
   return s;
 }
 
@@ -987,11 +994,14 @@ const letterEls = [...NAME].map((ch, i) => { const el = document.createElement('
 // 0 while reading, 1 once you've reached the very end
 function unfoldPos() {
   // measured in page scroll, and always finishing a little before the very bottom, so it can't stall partway
-  const fy = finaleEl.getBoundingClientRect().top + scrollY, maxY = document.documentElement.scrollHeight - innerHeight;
+  const y = scrollY;
+  const height = phone ? VS : innerHeight;
+  const fy = finaleEl.getBoundingClientRect().top + y;
+  const maxY = html.scrollHeight - (phone ? html.clientHeight : innerHeight);
   const together = document.documentElement.dataset.unfold === 'together';
   // together is scrubbed by scroll over a long window that starts as the ending's space first rises into view
-  const a = fy - innerHeight * (together ? 0.7 : 0.5), b = Math.min(maxY - 8, fy - innerHeight * (together ? 0.04 : 0.14));
-  return smooth(Math.min(a, b - 40), b, scrollY);
+  const a = fy - height * (together ? 0.7 : 0.5), b = Math.min(maxY - 8, fy - height * (together ? 0.04 : 0.14));
+  return smooth(Math.min(a, b - 40), b, y);
 }
 new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { rootMargin: '200px 0px' }).observe(stageEl);
 addEventListener('stylechange', applyStyle);
@@ -1015,19 +1025,19 @@ function frame(ms) {
   const time = ms / 1000;
   if (start === null) start = time;
   const dt = lastFrame === null ? 0 : Math.min(0.1, time - lastFrame); lastFrame = time;
-  // should the peptide be here? (a computer: once the photo in the same column has gone; a phone: once the work is on screen)
   const tr = tailEl.getBoundingClientRect();
-  let want;
-  // phones: grows in once the work section's top is a little way up the screen, shrinks away after the ending
-  if (phone) want = scrollY > layout.workTop - VS * 0.45 && scrollY < layout.tailBottom - VS * 0.35;
-  else {
+  if (phone) {
+    const workTop = slides[0].getBoundingClientRect().top;
+    appear = smooth(VS * 0.75, VS * 0.5, workTop) * smooth(VS * 0.25, VS * 0.5, tr.bottom);
+    if (reduceMotion) appear = Number(appear >= 0.5);
+  } else {
     const ph = portraitEl.getBoundingClientRect().bottom;
-    want = ph < innerHeight * 0.3 && tr.bottom > innerHeight * 0.35;   // position is the browser's job (sticky); this only grows and shrinks the dots
+    const want = ph < innerHeight * 0.3 && tr.bottom > innerHeight * 0.35;
+    appear = reduceMotion ? Number(want) : lerp(appear, Number(want), 1 - Math.exp(-dt * 3));
   }
-  appear = reduceMotion ? (want ? 1 : 0) : appear + ((want ? 1 : 0) - appear) * (1 - Math.exp(-dt * 3));   // grow / shrink over ~0.8 s
   tickTheme();
   if (!visible) return;
-  if (phone && !want && appear < 0.004) { if (!cleared) { renderer.setScissorTest(false); renderer.clear(); cleared = true; lettersEl.style.display = 'none'; } return; }
+  if (phone && appear === 0) { if (!cleared) { renderer.setScissorTest(false); renderer.clear(); cleared = true; lettersEl.style.display = 'none'; } return; }
   cleared = false;
   if (!sized) { renderer.setPixelRatio(dpr); renderer.setSize(SW, SH, false); sized = true; }
   for (const m of [risoColorMat, risoInkMat, paperMat, stippleMat]) m.uniforms.uAppear.value = ease(clamp(appear));
@@ -1036,11 +1046,12 @@ function frame(ms) {
   // slides -> a blend of two framings (sp is already eased, and continuous, so the blend is linear)
   stTop = phone ? 0 : stageEl.getBoundingClientRect().top;     // (a phone's stage is fixed at the top of the screen)
   const sp = motion === 'pan' ? slidePos() : 0;
+  const FRAMES = phone ? phoneFrames : desktopFrames;
   const i0 = Math.min(Math.floor(sp), FRAMES.length - 1), i1 = Math.min(i0 + 1, FRAMES.length - 1), f = sp - i0;
   const A = FRAMES[i0], B = FRAMES[i1];
   // unfolding follows a critically damped spring (an S-curve in time); folding back is immediate
   const ufTarget = reduceMotion ? (unfoldPos() > 0.5 ? 1 : 0) : unfoldPos();
-  if (ufTarget < ufShown || reduceMotion) { ufShown = ufTarget; ufVel = 0; }
+  if (phone || ufTarget < ufShown || reduceMotion) { ufShown = ufTarget; ufVel = 0; }
   else {
     const w = html.dataset.unfold === 'together' ? 6.5 : 7.5;   // together: tracks the scroll, but a hard flick still plays out over ~0.4 s   // together follows the scroll closely (just enough spring to stay smooth)
     for (let k = 0; k < 4; k++) { const h = dt / 4; ufVel += (w * w * (ufTarget - ufShown) - 2 * w * ufVel) * h; ufShown += ufVel * h; }
@@ -1089,8 +1100,8 @@ function frame(ms) {
   if (stipple) stipple.visible = pepMode === 'stipple' && t > 0.999;          // dots are scattered on the folded shape only
   if (pepMode === 'stipple') risoInk.visible = t <= 0.999;
 
-  // every framing change eases in, so nothing ever jumps (unfolding keeps its own timing)
-  const kf = cam.init ? 1 - Math.exp(-dt * (uf > 0.01 ? 18 : phone ? 22 : 14)) : 1;   // quick, but never a jump
+  // Phone poses are eased by scroll position so a fling and a slow drag land on the same frame.
+  const kf = phone || !cam.init ? 1 : 1 - Math.exp(-dt * (uf > 0.01 ? 18 : 14));
   const projTilt = lerp(A.tilt, B.tilt, f);
   cam.tilt = lerp(cam.tilt, upright ? lerp(projTilt, Math.PI / 2, smooth(0, 0.4, fd)) : lerp(projTilt, 0, ue), kf);
   outer.rotation.set(lerp(0.2, 0.08, ue), 0, cam.tilt);
@@ -1179,7 +1190,7 @@ function frame(ms) {
   // whole canvas (cheap), then draw just that band
   const bandPx = Math.min(SH, topY / dpr + BLUR_PX + 90);
   // ...and never below the end of the work section: at the very end the full-height stage overhangs the footer
-  const clipPx = clamp(phone ? SH - (layout.tailBottom - scrollY) : stTop + SH - tr.bottom, 0, SH);
+  const clipPx = clamp(stTop + SH - tr.bottom, 0, SH);
   renderer.setScissorTest(false); renderer.clear();
   renderer.setScissorTest(true); renderer.setScissor(0, clipPx, SW, Math.max(0, bandPx - clipPx));
   renderer.autoClear = false; renderer.render(scene, camera); renderer.autoClear = true;
