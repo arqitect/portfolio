@@ -70,6 +70,7 @@
   [data-type="modern"] .lede, [data-type="modern"] .work p { font-weight: 400; }
 
   * { box-sizing: border-box; }
+  html, body { overflow-x: hidden; overflow-x: clip; overscroll-behavior-x: none; }
   html { background: var(--bg) var(--grain); -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; transition: background-color .4s; }
   body { margin: 0; background: var(--bg) var(--grain); color: var(--ink); font-family: var(--text); font-size: 18px; line-height: 1.55; -webkit-font-smoothing: antialiased; transition: background-color .4s, color .4s; }
   a { color: inherit; }
@@ -152,7 +153,7 @@
   .stage { order: -1; position: sticky; top: 0; z-index: 3; height: 100vh; height: 100lvh; margin: 0 calc(-1 * var(--gutter)) -100vh; margin-bottom: -100lvh; pointer-events: none; }
   .stage .ring { z-index: 2; display: none; }   /* no circle or residue label */
   .tail { position: relative; display: flex; flex-direction: column; }
-  .svh-probe { position: fixed; top: 0; left: -10px; width: 1px; height: 100vh; height: 100svh; pointer-events: none; visibility: hidden; }
+  .svh-probe { position: fixed; top: 0; left: 0; width: 1px; height: 100vh; height: 100svh; pointer-events: none; visibility: hidden; }
   .finale { height: 58svh; }
   [data-unfold="together"] .finale { height: 74svh; }   /* more room to scroll through it */
   /* the name, letter by letter above each bead once the chain has unfolded */
@@ -895,7 +896,7 @@ function measure() {
   const cw = Math.min(SW - 80, 1280), cl = (SW - cw) / 2;
   colCx = (cl + cw * 0.27) / SW;               // a little in from the column's centre, toward the middle of the page
   const colWorld = visW * (cw * 0.45) / SW;
-  fitScale = phone ? 0.2 * (visW * VS / SW) / 15                                 // phones: sized by the screen's height (the molecule is ~15 Å thick)
+  fitScale = phone ? 0.245 * (visW * VS / SW) / 15                                 // phones: sized by the screen's height (the molecule is ~15 Å thick)
                    : Math.min(0.86 * visH / FOLD_LEN, 0.62 * colWorld / 15)    // stood up, filling most of the window's height
                      * (html.dataset.size === 'large' ? 1.55 : 1);              // the "much larger" variant runs off the window, edge to edge
   for (const m of [risoColorMat, risoInkMat, paperMat]) m.uniforms.uRes.value.set(SW * dpr, SH * dpr);
@@ -919,19 +920,20 @@ const FRAMES = slides.map((el, i) => {
   const r = +el.dataset.focus;
   // one continuous pose: the tilt never changes between projects. On a phone the molecule glides along its own
   // length, bringing each project's residue (R2, F5, Y9: left to right along the name) to the centre as you scroll
-  if (!r) return phone ? { res: 0, zoom: 1.05, sx: 0.5, sy: 0.84, tilt: -0.06 } : { res: 0, zoom: 1, dx: 0, sy: 0.5, tilt: Math.PI / 2 - 0.04 };
+  if (!r) return phone ? { res: 0, zoom: 1.05, sx: 0.5, sy: 0.885, tilt: -0.06 } : { res: 0, zoom: 1, dx: 0, sy: 0.5, tilt: Math.PI / 2 - 0.04 };
   if (!phone) return { res: r, zoom: 1.08, dx: 0, sy: 0.5, tilt: Math.PI / 2 - 0.04, label: el.dataset.label };
   // pan: how far toward centring the residue it slides (1 = all the way, so the far end juts well off-screen)
-  return { res: r, zoom: 1.5, sx: 0.5, sy: 0.84, pan: 0.85, tilt: -0.06, label: el.dataset.label };
+  return { res: r, zoom: 1.5, sx: 0.5, sy: 0.885, pan: 0.85, tilt: -0.06, label: el.dataset.label };
 });
 // how far through the slides we are, as a continuous number: 0 = intro, 1 = first project ...
 function slidePos() {
   // the open space is between the top bar and the band; a project takes over as its text rises through it
   // a long, continuous hand-off: a project starts taking over as its text reaches the molecule, and has fully
   // taken over by the time it's three-quarters of the way up the open space
-  const lo = phone ? Math.max(0, stTop) + VS * 0.68 : innerHeight * 0.72, hi = bar.getBoundingClientRect().bottom + 10;
+  const top0 = phone ? Math.max(0, stTop) : 0, H = phone ? VS : innerHeight;
+  const lo = top0 + H * (phone ? 0.62 : 0.72), hi = top0 + H * (phone ? 0.3 : 0.36);
   let s = 0;
-  for (let i = 1; i < slides.length; i++) s += smooth(lo, hi + (lo - hi) * 0.25, slides[i].getBoundingClientRect().top);
+  for (let i = 1; i < slides.length; i++) s += smooth(lo, hi, slides[i].getBoundingClientRect().top);
   return s;
 }
 
@@ -1067,7 +1069,7 @@ function frame(ms) {
   if (pepMode === 'stipple') risoInk.visible = t <= 0.999;
 
   // every framing change eases in, so nothing ever jumps (unfolding keeps its own timing)
-  const kf = cam.init ? 1 - Math.exp(-dt * (uf > 0.01 ? 18 : 14)) : 1;   // quick, but never a jump
+  const kf = cam.init ? 1 - Math.exp(-dt * (uf > 0.01 ? 18 : phone ? 22 : 14)) : 1;   // quick, but never a jump
   const projTilt = lerp(A.tilt, B.tilt, f);
   cam.tilt = lerp(cam.tilt, upright ? lerp(projTilt, Math.PI / 2, smooth(0, 0.4, fd)) : lerp(projTilt, 0, ue), kf);
   outer.rotation.set(lerp(0.2, 0.08, ue), 0, cam.tilt);
