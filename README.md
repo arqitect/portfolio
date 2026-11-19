@@ -10,7 +10,7 @@ sticks beside the work sections, and its pose eases as each project enters
 the reading area. Below 860 pixels, the page stacks the content and draws
 the peptide in a fixed canvas. The canvas extends under Safari’s toolbar
 using `100lvh`; the art and scroll cues use `100svh` as a stable reference.
-The mobile pose follows the article positions and the finale directly as
-the page scrolls.
+The mobile pose follows the article positions and finale through a shared
+scroll position with brief smoothing between browser scroll updates.
 
 TODO: add `resume.pdf` and enable its link in `index.html`.

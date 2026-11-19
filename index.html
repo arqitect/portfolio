@@ -640,9 +640,14 @@ function meshSurface(cell) {
     if (inside !== (F[id + nxy] > ISO)) quad(cellVert[id], cellVert[id - 1], cellVert[id - 1 - nx], cellVert[id - nx], !inside);
   }
   geom.setDrawRange(0, ic);
-  geom.attributes.position.needsUpdate = true;
-  geom.attributes.normal.needsUpdate = true;
-  geom.index.needsUpdate = true;
+  // Upload only what the current mesh uses when the surface changes during the unfold.
+  for (const attribute of [geom.attributes.position, geom.attributes.normal, geom.index]) {
+    const count = attribute === geom.index ? ic : vc * 3;
+    if (count === 0) continue;
+    attribute.clearUpdateRanges();
+    attribute.addUpdateRange(0, count);
+    attribute.needsUpdate = true;
+  }
 }
 
 // residues fold one after another, N-terminus first, each swinging through a gentle arc
@@ -946,17 +951,13 @@ const framesFor = phone => slides.map(el => {
 const phoneFrames = framesFor(true), desktopFrames = framesFor(false);
 
 // 0 = intro, 1 = first project and so on, blending between adjacent framings.
-function slidePos() {
+function slidePos(y) {
   let s = 0;
   for (let i = 1; i < slides.length; i++) {
-    const slide = slides[i];
-    const top = slide.getBoundingClientRect().top;
     if (phone) {
-      // Follow the article's actual start, including the slide's top padding.
-      const articleTop = top + slide.firstElementChild.offsetTop;
-      s += smooth(VS * 0.72, VS * 0.42, articleTop);
+      s += smooth(VS * 0.72, VS * 0.42, phoneLayout.articles[i - 1] - y);
     } else {
-      s += smooth(innerHeight * 0.72, innerHeight * 0.36, top);
+      s += smooth(innerHeight * 0.72, innerHeight * 0.36, slides[i].getBoundingClientRect().top);
     }
   }
   return s;
@@ -991,13 +992,32 @@ const cam = { x: 0, y: 0, s: 1, tilt: 0, init: false };
 const finaleEl = document.getElementById('finale'), lettersEl = document.getElementById('letters');
 const NAME = 'ERICFADEYEV', CODES = ['Glu','Arg','Ile','Cys','Phe','Ala','Asp','Glu','Tyr','Glu','Val'];
 const letterEls = [...NAME].map((ch, i) => { const el = document.createElement('span'); el.textContent = ch; lettersEl.appendChild(el); return el; });
-// 0 while reading, 1 once you've reached the very end
-function unfoldPos() {
-  // measured in page scroll, and always finishing a little before the very bottom, so it can't stall partway
+// Cache document positions after reflow. Safari can deliver scroll updates in steps, and
+// reading layout after writing the finale letters would force the browser to lay them out.
+let phoneLayout, phoneY = null;
+function measurePhoneLayout() {
+  if (!phoneQuery.matches) return;
   const y = scrollY;
+  phoneLayout = {
+    articles: slides.slice(1).map(slide => slide.getBoundingClientRect().top + slide.firstElementChild.offsetTop + y),
+    workTop: slides[0].getBoundingClientRect().top + y,
+    tailBottom: tailEl.getBoundingClientRect().bottom + y,
+    finaleTop: finaleEl.getBoundingClientRect().top + y,
+    maxY: html.scrollHeight - html.clientHeight,
+  };
+}
+const layoutObserver = new ResizeObserver(measurePhoneLayout);
+for (const el of [document.body, document.querySelector('.hero'), tailEl, ...slides]) layoutObserver.observe(el);
+phoneQuery.addEventListener('change', measurePhoneLayout);
+addEventListener('resize', measurePhoneLayout);
+measurePhoneLayout();
+
+// 0 while reading, 1 once you've reached the very end
+function unfoldPos(y) {
+  // Finish a little before the bottom so the unfolding cannot stall partway.
   const height = phone ? VS : innerHeight;
-  const fy = finaleEl.getBoundingClientRect().top + y;
-  const maxY = html.scrollHeight - (phone ? html.clientHeight : innerHeight);
+  const fy = phone ? phoneLayout.finaleTop : finaleEl.getBoundingClientRect().top + y;
+  const maxY = phone ? phoneLayout.maxY : html.scrollHeight - innerHeight;
   const together = document.documentElement.dataset.unfold === 'together';
   // together is scrubbed by scroll over a long window that starts as the ending's space first rises into view
   const a = fy - height * (together ? 0.7 : 0.5), b = Math.min(maxY - 8, fy - height * (together ? 0.04 : 0.14));
@@ -1025,14 +1045,25 @@ function frame(ms) {
   const time = ms / 1000;
   if (start === null) start = time;
   const dt = lastFrame === null ? 0 : Math.min(0.1, time - lastFrame); lastFrame = time;
-  const tr = tailEl.getBoundingClientRect();
+  const y = scrollY;
+  let tailBottom;
   if (phone) {
-    const workTop = slides[0].getBoundingClientRect().top;
-    appear = smooth(VS * 0.75, VS * 0.5, workTop) * smooth(VS * 0.25, VS * 0.5, tr.bottom);
+    // Smooth the scroll samples once for all cues. Bound the delay on fast flings
+    // so the pose still follows the article on screen.
+    if (phoneY === null || reduceMotion || Math.abs(y - phoneY) < 0.5) phoneY = y;
+    else {
+      const maxBehind = VS * 0.12;
+      phoneY = lerp(clamp(phoneY, y - maxBehind, y + maxBehind), y, 1 - Math.exp(-dt / 0.045));
+    }
+    tailBottom = phoneLayout.tailBottom - y;
+    appear = smooth(VS * 0.75, VS * 0.5, phoneLayout.workTop - phoneY)
+           * smooth(VS * 0.25, VS * 0.5, phoneLayout.tailBottom - phoneY);
     if (reduceMotion) appear = Number(appear >= 0.5);
   } else {
+    phoneY = null;
+    tailBottom = tailEl.getBoundingClientRect().bottom;
     const ph = portraitEl.getBoundingClientRect().bottom;
-    const want = ph < innerHeight * 0.3 && tr.bottom > innerHeight * 0.35;
+    const want = ph < innerHeight * 0.3 && tailBottom > innerHeight * 0.35;
     appear = reduceMotion ? Number(want) : lerp(appear, Number(want), 1 - Math.exp(-dt * 3));
   }
   tickTheme();
@@ -1045,12 +1076,13 @@ function frame(ms) {
 
   // slides -> a blend of two framings (sp is already eased, and continuous, so the blend is linear)
   stTop = phone ? 0 : stageEl.getBoundingClientRect().top;     // (a phone's stage is fixed at the top of the screen)
-  const sp = motion === 'pan' ? slidePos() : 0;
+  const sp = motion === 'pan' ? slidePos(phoneY) : 0;
   const FRAMES = phone ? phoneFrames : desktopFrames;
   const i0 = Math.min(Math.floor(sp), FRAMES.length - 1), i1 = Math.min(i0 + 1, FRAMES.length - 1), f = sp - i0;
   const A = FRAMES[i0], B = FRAMES[i1];
-  // unfolding follows a critically damped spring (an S-curve in time); folding back is immediate
-  const ufTarget = reduceMotion ? (unfoldPos() > 0.5 ? 1 : 0) : unfoldPos();
+  // On desktop the unfold follows a spring; on phones it uses the same scroll as the project poses.
+  const ufPos = unfoldPos(phone ? phoneY : y);
+  const ufTarget = reduceMotion ? Number(ufPos > 0.5) : ufPos;
   if (phone || ufTarget < ufShown || reduceMotion) { ufShown = ufTarget; ufVel = 0; }
   else {
     const w = html.dataset.unfold === 'together' ? 6.5 : 7.5;   // together: tracks the scroll, but a hard flick still plays out over ~0.4 s   // together follows the scroll closely (just enough spring to stay smooth)
@@ -1100,7 +1132,7 @@ function frame(ms) {
   if (stipple) stipple.visible = pepMode === 'stipple' && t > 0.999;          // dots are scattered on the folded shape only
   if (pepMode === 'stipple') risoInk.visible = t <= 0.999;
 
-  // Phone poses are eased by scroll position so a fling and a slow drag land on the same frame.
+  // The phone pose already uses the smoothed scroll position.
   const kf = phone || !cam.init ? 1 : 1 - Math.exp(-dt * (uf > 0.01 ? 18 : 14));
   const projTilt = lerp(A.tilt, B.tilt, f);
   cam.tilt = lerp(cam.tilt, upright ? lerp(projTilt, Math.PI / 2, smooth(0, 0.4, fd)) : lerp(projTilt, 0, ue), kf);
@@ -1178,7 +1210,7 @@ function frame(ms) {
   }
 
   camera.layers.set(1);
-  renderer.setRenderTarget(silTarget); renderer.clear(); renderer.render(scene, camera);
+  renderer.setRenderTarget(silTarget); renderer.render(scene, camera);
   camera.layers.set(0);
   const step = BLUR_PX / 4 / 7;                                   // in quarter-size pixels, spread over 7 taps each way
   blurMat.uniforms.tMap.value = silTarget.texture; blurMat.uniforms.uDir.value.set(step / silTarget.width, 0);
@@ -1190,7 +1222,7 @@ function frame(ms) {
   // whole canvas (cheap), then draw just that band
   const bandPx = Math.min(SH, topY / dpr + BLUR_PX + 90);
   // ...and never below the end of the work section: at the very end the full-height stage overhangs the footer
-  const clipPx = clamp(stTop + SH - tr.bottom, 0, SH);
+  const clipPx = clamp(stTop + SH - tailBottom, 0, SH);
   renderer.setScissorTest(false); renderer.clear();
   renderer.setScissorTest(true); renderer.setScissor(0, clipPx, SW, Math.max(0, bandPx - clipPx));
   renderer.autoClear = false; renderer.render(scene, camera); renderer.autoClear = true;
