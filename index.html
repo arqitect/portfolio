@@ -156,8 +156,7 @@
   .stage .ring { z-index: 2; display: none; }   /* no circle or residue label */
   .tail { position: relative; display: flex; flex-direction: column; }
   .svh-probe { position: fixed; top: 0; left: 0; width: 1px; height: 100vh; height: 100svh; pointer-events: none; visibility: hidden; }
-  .finale { height: 58svh; }
-  [data-unfold="together"] .finale { height: 74svh; }   /* more room to scroll through it */
+  .finale { height: 88svh; } /* leave room for the unfolded name to scroll with the footer */
   /* the name, letter by letter above each bead once the chain has unfolded */
   .letters { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
   .letters span { position: absolute; left: 0; top: 0; font-family: var(--display); font-weight: var(--display-w); font-size: clamp(30px, 8.4vw, 54px); line-height: 1; color: var(--ink); opacity: 0; will-change: transform, opacity; }
@@ -189,9 +188,6 @@
   .rule { position: absolute; left: 0; right: 0; height: 8px; margin-top: -4px; background: linear-gradient(transparent 3.5px, var(--rule) 3.5px, var(--rule) 4.5px, transparent 4.5px); filter: var(--wobble, none); }
   .item .why .rule { top: 0; }
 
-  .off-sec { position: relative; z-index: 1; margin: 0; padding: 56px 0 0; }
-  .off-sec h2 { font: 500 11.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0; }
-  .off { font-size: 18px; color: var(--ink-2); margin: 10px 0 0; }
   .pep-note { margin-bottom: 6px; color: var(--ink-2); text-wrap: balance; }
   footer { position: relative; z-index: 1; margin: 0; padding: 64px 0 calc(36px + env(safe-area-inset-bottom, 0px)); font: 11px var(--mono); color: var(--ink-3); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
 
@@ -267,9 +263,7 @@
     .item h3 { font-size: clamp(44px, 4.4vw, 64px); }
     .item p { font-size: 19.5px; }
     .item .why { font-size: 16.5px; }
-    .finale { height: 52vh; }
-    [data-unfold="together"] .finale { height: 76vh; }
-    .off-sec { margin: 0; padding: 0; max-width: none; }
+    .finale { height: 100vh; } /* native sticky stage releases at the start of the finale */
     footer { margin: 0; padding-left: 0; padding-right: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -358,11 +352,6 @@
       </article>
     </div>
 
-  </section>
-
-  <section class="off-sec rv" aria-labelledby="off-h">
-    <h2 id="off-h">Off the clock</h2>
-    <p class="off">Volleyball. I play, and I coach.</p>
   </section>
 
   <!-- room to scroll while the peptide unfolds back into the chain that spells my name -->
@@ -859,6 +848,7 @@ function themeNow() { return theme.cur ? { bg: theme.cur.bg.clone(), ink: theme.
 function tickTheme() {
   if (!theme.to) return;
   const A = theme.from, B = theme.to, age = performance.now() - theme.t0;
+  if (theme.cur?.k === 1 && theme.cur.to === B && age > 700) return;
   // follow the page's own CSS fade exactly: read the page colour the browser is showing right now
   // (mid-transition it reports the in-between value), so the cover can never differ from the page
   let bg, k;
@@ -1022,13 +1012,14 @@ function measurePhoneLayout() {
     finaleTop: finaleEl.getBoundingClientRect().top + y,
     maxY: html.scrollHeight - html.clientHeight,
   };
-  // A fixed document-space origin and a 1:1 timeline (one CSS pixel per scroll pixel).
-  // Use explicit pixel bounds so toolbar changes do not change the translation ratio.
+  const height = svhProbe.offsetHeight || innerHeight;
+  phoneLayout.releaseY = Math.max(1, Math.min(phoneLayout.maxY - 8, phoneLayout.finaleTop - height * 0.22));
+  // One CSS pixel per scroll pixel until the finale; then the stage stays in document space.
   stageEl.style.setProperty('--stage-origin', `${-phoneLayout.stageOrigin}px`);
-  stageEl.style.setProperty('--stage-distance', `${Math.max(1, phoneLayout.maxY + 100)}px`);
+  stageEl.style.setProperty('--stage-distance', `${phoneLayout.releaseY}px`);
 }
 const layoutObserver = new ResizeObserver(measurePhoneLayout);
-for (const el of [document.body, document.querySelector('.hero'), tailEl, ...slides]) layoutObserver.observe(el);
+for (const el of [document.body, document.querySelector('.hero'), tailEl, svhProbe, ...slides]) layoutObserver.observe(el);
 phoneQuery.addEventListener('change', measurePhoneLayout);
 addEventListener('resize', measurePhoneLayout);
 measurePhoneLayout();
@@ -1041,7 +1032,7 @@ function unfoldPos(y) {
   const maxY = phone ? phoneLayout.maxY : html.scrollHeight - innerHeight;
   const together = document.documentElement.dataset.unfold === 'together';
   // together is scrubbed by scroll over a long window that starts as the ending's space first rises into view
-  const a = fy - height * (together ? 0.7 : 0.5), b = Math.min(maxY - 8, fy - height * (together ? 0.04 : 0.14));
+  const a = fy - height * (together ? 0.85 : 0.65), b = phone ? phoneLayout.releaseY : Math.min(maxY - 8, fy - height * 0.15);
   return smooth(Math.min(a, b - 40), b, y);
 }
 new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { rootMargin: '200px 0px' }).observe(stageEl);
@@ -1077,39 +1068,40 @@ function frame(ms) {
       phoneY = lerp(clamp(phoneY, y - maxBehind, y + maxBehind), y, 1 - Math.exp(-dt / 0.045));
     }
     tailBottom = phoneLayout.tailBottom - y;
-    appear = smooth(VS * 0.75, VS * 0.5, phoneLayout.workTop - phoneY)
-           * smooth(VS * 0.25, VS * 0.5, phoneLayout.tailBottom - phoneY);
+    appear = smooth(VS * 0.75, VS * 0.5, phoneLayout.workTop - phoneY);
     if (reduceMotion) appear = Number(appear >= 0.5);
   } else {
     phoneY = null;
     tailBottom = tailEl.getBoundingClientRect().bottom;
     const ph = portraitEl.getBoundingClientRect().bottom;
-    const want = ph < innerHeight * 0.3 && tailBottom > innerHeight * 0.35;
+    const want = ph < innerHeight * 0.3;
     appear = reduceMotion ? Number(want) : lerp(appear, Number(want), 1 - Math.exp(-dt * 3));
   }
   tickTheme();
   // Older browsers without scroll timelines retain a transform-only fallback.
   // Native timelines need no per-frame DOM writes to keep the stage anchored.
   if (phone) {
-    if (!nativeStageScroll && y !== stageY) {
-      stageEl.style.setProperty('--stage-scroll', `${y}px`);
-      stageY = y;
+    const anchorY = clamp(y, 0, phoneLayout.releaseY);
+    if (!nativeStageScroll && anchorY !== stageY) {
+      stageEl.style.setProperty('--stage-scroll', `${anchorY}px`);
+      stageY = anchorY;
     }
   } else if (!visible) return;
-  if (phone && appear === 0) { if (!cleared) { renderer.setScissorTest(false); renderer.clear(); cleared = true; lettersEl.style.display = 'none'; } return; }
+  if (phone && (appear === 0 || y >= phoneLayout.releaseY + SH)) { if (!cleared) { renderer.setScissorTest(false); renderer.clear(); cleared = true; lettersEl.style.display = 'none'; } return; }
   cleared = false;
   if (!sized) { renderer.setPixelRatio(dpr); renderer.setSize(SW, SH, false); sized = true; }
   for (const m of [risoColorMat, risoInkMat, paperMat, stippleMat]) m.uniforms.uAppear.value = ease(clamp(appear));
   glass.opacity = 0.9 * clamp(appear);
 
   // slides -> a blend of two framings (sp is already eased, and continuous, so the blend is linear)
-  stTop = phone ? 0 : stageEl.getBoundingClientRect().top;     // mobile stage is aligned to scrollY
+  stTop = phone ? clamp(y, 0, phoneLayout.releaseY) - y : stageEl.getBoundingClientRect().top;
   const sp = motion === 'pan' ? slidePos(phoneY) : 0;
   const FRAMES = phone ? phoneFrames : desktopFrames;
   const i0 = Math.min(Math.floor(sp), FRAMES.length - 1), i1 = Math.min(i0 + 1, FRAMES.length - 1), f = sp - i0;
   const A = FRAMES[i0], B = FRAMES[i1];
   // On desktop the unfold follows a spring; on phones it uses the same scroll as the project poses.
-  const ufPos = unfoldPos(phone ? phoneY : y);
+  // Ensure the chain is fully open at the release boundary, even during a fast swipe.
+  const ufPos = unfoldPos(phone ? (y >= phoneLayout.releaseY ? y : Math.min(phoneY, phoneLayout.releaseY)) : y);
   const ufTarget = reduceMotion ? Number(ufPos > 0.5) : ufPos;
   if (phone || ufTarget < ufShown || reduceMotion) { ufShown = ufTarget; ufVel = 0; }
   else {
@@ -1143,7 +1135,7 @@ function frame(ms) {
   const t = 1 - fd;
   const alive = t < 0.001 && !reduceMotion;
   frameNo++;
-  if (alive && (!phone || frameNo % 2 === 0)) {          // (phones: the slow drift is rebuilt every other frame)
+  if (alive && (!phone || time - lastMove >= 1 / 30 || foldShown !== -1)) { // cap costly mobile mesh rebuilds at 30 Hz
     // fully unfolded: the chain drifts like something in water. Layered rhythms per bead, so it never quite repeats
     placeAtoms(0);
     const k = smooth(0, 1.5, time - (aliveSince ??= time));
@@ -1173,7 +1165,7 @@ function frame(ms) {
   scene.updateMatrixWorld(true);
   const pa = placeFor(A, s), pb = placeFor(B, s);
   let px = lerp(pa.x, pb.x, f), py = lerp(pa.y, pb.y, f);
-  if (ue > 0) { const pc = placeFor({ res: 0, sx: 0.5, sy: phone ? 0.5 : 0.56, vp: true }, s); px = lerp(px, pc.x, ue); py = lerp(py, pc.y, ue); }
+  if (ue > 0) { const pc = placeFor({ res: 0, sx: 0.5, sy: 0.5 }, s); px = lerp(px, pc.x, ue); py = lerp(py, pc.y, ue); }
   else if (upright && fd > 0) { const pc = placeFor({ res: 0, dx: 0, sy: 0.44 }, s); px = lerp(px, pc.x, ease(fd)); py = lerp(py, pc.y, ease(fd)); }
   cam.x = lerp(cam.x, px, kf); cam.y = lerp(cam.y, py, kf); cam.s = lerp(cam.s, s, kf); cam.init = true;
   rig.position.set(cam.x, cam.y, HOVER);
