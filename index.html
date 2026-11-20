@@ -150,6 +150,7 @@
   /* Keep the render surface at 100lvh and scroll choreography at 100svh.
      On phones the stage is document-positioned: iOS Safari clips fixed/sticky layers
      above its translucent toolbar, even if their CSS height extends beneath it. */
+  @keyframes stage-anchor { from { transform: translateY(0); } to { transform: translateY(var(--stage-distance, 1px)); } }
   .stage-track { display: contents; }
   .stage { position: fixed; left: 0; right: 0; top: 0; height: 100vh; height: 100lvh; z-index: 3; pointer-events: none; }
   .stage .ring { z-index: 2; display: none; }   /* no circle or residue label */
@@ -229,7 +230,13 @@
     /* Bound the moving stage to the document so it cannot extend the scroll range. */
     .stage-track { display: block; position: absolute; top: -100vh; top: -100lvh; bottom: 0;
       left: calc(50% - 50vw); width: 100vw; z-index: 3; overflow: clip; pointer-events: none; }
-    .stage { position: absolute; top: var(--stage-y, 0px); overflow: hidden; }
+    .stage { position: absolute; top: var(--stage-origin, 0px); overflow: hidden;
+      transform: translateY(var(--stage-scroll, 0px)); will-change: transform; }
+    /* Scroll compensation belongs on the compositor, independently of WebGL frames. */
+    @supports (animation-timeline: scroll(root block)) and (animation-range: 0px 1px) {
+      .stage { animation: stage-anchor linear both; animation-timeline: scroll(root block);
+        animation-range: 0px var(--stage-distance, 1px); }
+    }
   }
   @media (min-width: 860px) {
     /* one grid for the whole page, up to 1280px wide: pictures on the left 45% (the photo, then the
@@ -1003,6 +1010,7 @@ const letterEls = [...NAME].map((ch, i) => { const el = document.createElement('
 // Cache document positions after reflow. Safari can deliver scroll updates in steps, and
 // reading layout after writing the finale letters would force the browser to lay them out.
 let phoneLayout, phoneY = null, stageY = null;
+const nativeStageScroll = CSS.supports('animation-timeline', 'scroll(root block)') && CSS.supports('animation-range', '0px 1px');
 function measurePhoneLayout() {
   if (!phoneQuery.matches) return;
   const y = scrollY;
@@ -1014,6 +1022,10 @@ function measurePhoneLayout() {
     finaleTop: finaleEl.getBoundingClientRect().top + y,
     maxY: html.scrollHeight - html.clientHeight,
   };
+  // A fixed document-space origin and a 1:1 timeline (one CSS pixel per scroll pixel).
+  // Use explicit pixel bounds so toolbar changes do not change the translation ratio.
+  stageEl.style.setProperty('--stage-origin', `${-phoneLayout.stageOrigin}px`);
+  stageEl.style.setProperty('--stage-distance', `${Math.max(1, phoneLayout.maxY + 100)}px`);
 }
 const layoutObserver = new ResizeObserver(measurePhoneLayout);
 for (const el of [document.body, document.querySelector('.hero'), tailEl, ...slides]) layoutObserver.observe(el);
@@ -1076,13 +1088,12 @@ function frame(ms) {
     appear = reduceMotion ? Number(want) : lerp(appear, Number(want), 1 - Math.exp(-dt * 3));
   }
   tickTheme();
-  // The mobile stage moves in document coordinates, not in Safari's fixed layer.
-  // Use raw scroll for anchoring; only the molecular choreography is smoothed.
+  // Older browsers without scroll timelines retain a transform-only fallback.
+  // Native timelines need no per-frame DOM writes to keep the stage anchored.
   if (phone) {
-    const nextStageY = y - phoneLayout.stageOrigin;
-    if (nextStageY !== stageY) {
-      stageEl.style.setProperty('--stage-y', `${nextStageY}px`);
-      stageY = nextStageY;
+    if (!nativeStageScroll && y !== stageY) {
+      stageEl.style.setProperty('--stage-scroll', `${y}px`);
+      stageY = y;
     }
   } else if (!visible) return;
   if (phone && appear === 0) { if (!cleared) { renderer.setScissorTest(false); renderer.clear(); cleared = true; lettersEl.style.display = 'none'; } return; }
