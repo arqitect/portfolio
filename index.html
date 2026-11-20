@@ -147,8 +147,10 @@
   /* the peptide, pinned to the bottom of the screen. The stage itself is see-through: the canvas paints a
      page-coloured cover that hugs the molecule's outline (plus a solid strip along the bottom), and every
      edge of it is made of halftone dots that shrink to nothing, so words scrolling down break up into print */
-  /* The phone canvas reaches under Safari's toolbar (100lvh). Framing and scroll cues use
-     the small viewport (100svh) so the toolbar can move without shifting the choreography. */
+  /* Keep the render surface at 100lvh and scroll choreography at 100svh.
+     On phones the stage is document-positioned: iOS Safari clips fixed/sticky layers
+     above its translucent toolbar, even if their CSS height extends beneath it. */
+  .stage-track { display: contents; }
   .stage { position: fixed; left: 0; right: 0; top: 0; height: 100vh; height: 100lvh; z-index: 3; pointer-events: none; }
   .stage .ring { z-index: 2; display: none; }   /* no circle or residue label */
   .tail { position: relative; display: flex; flex-direction: column; }
@@ -224,7 +226,10 @@
     .btn { padding-inline: clamp(8px, 3vw, 18px); gap: 6px; }
     .in-bar, .bar nav { gap: clamp(6px, calc(6vw - 12px), 12px); }
     .brand { font-size: clamp(16px, 5.2vw, 20px); }
-    .stage { overflow: hidden; }  /* transformed finale letters stay inside the fixed layer */
+    /* Bound the moving stage to the document so it cannot extend the scroll range. */
+    .stage-track { display: block; position: absolute; top: -100vh; top: -100lvh; bottom: 0;
+      left: calc(50% - 50vw); width: 100vw; z-index: 3; overflow: clip; pointer-events: none; }
+    .stage { position: absolute; top: var(--stage-y, 0px); overflow: hidden; }
   }
   @media (min-width: 860px) {
     /* one grid for the whole page, up to 1280px wide: pictures on the left 45% (the photo, then the
@@ -356,10 +361,12 @@
   <!-- room to scroll while the peptide unfolds back into the chain that spells my name -->
   <div class="finale" id="finale" aria-hidden="true"></div>
 
+  <div class="stage-track" id="stageTrack" aria-hidden="true">
   <div class="stage" id="stage" aria-hidden="true">
     <canvas id="gl"></canvas>
     <svg class="ring" id="ring"><path class="halo" id="ringHalo"/><path id="ringPath"/><path id="ringTick"/><text id="ringText"></text></svg>
     <div class="letters" id="letters"></div>
+  </div>
   </div>
   </div>
 
@@ -424,6 +431,7 @@ const html = document.documentElement;
 const css = name => getComputedStyle(html).getPropertyValue(name).trim();
 
 const stageEl = document.getElementById('stage');
+const stageTrack = document.getElementById('stageTrack');
 const canvas = document.getElementById('gl');
 let renderer;
 try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); } catch { throw new Error('no WebGL'); }
@@ -994,13 +1002,14 @@ const NAME = 'ERICFADEYEV', CODES = ['Glu','Arg','Ile','Cys','Phe','Ala','Asp','
 const letterEls = [...NAME].map((ch, i) => { const el = document.createElement('span'); el.textContent = ch; lettersEl.appendChild(el); return el; });
 // Cache document positions after reflow. Safari can deliver scroll updates in steps, and
 // reading layout after writing the finale letters would force the browser to lay them out.
-let phoneLayout, phoneY = null;
+let phoneLayout, phoneY = null, stageY = null;
 function measurePhoneLayout() {
   if (!phoneQuery.matches) return;
   const y = scrollY;
   phoneLayout = {
     articles: slides.slice(1).map(slide => slide.getBoundingClientRect().top + slide.firstElementChild.offsetTop + y),
     workTop: slides[0].getBoundingClientRect().top + y,
+    stageOrigin: stageTrack.getBoundingClientRect().top + y,
     tailBottom: tailEl.getBoundingClientRect().bottom + y,
     finaleTop: finaleEl.getBoundingClientRect().top + y,
     maxY: html.scrollHeight - html.clientHeight,
@@ -1067,7 +1076,15 @@ function frame(ms) {
     appear = reduceMotion ? Number(want) : lerp(appear, Number(want), 1 - Math.exp(-dt * 3));
   }
   tickTheme();
-  if (!visible) return;
+  // The mobile stage moves in document coordinates, not in Safari's fixed layer.
+  // Use raw scroll for anchoring; only the molecular choreography is smoothed.
+  if (phone) {
+    const nextStageY = y - phoneLayout.stageOrigin;
+    if (nextStageY !== stageY) {
+      stageEl.style.setProperty('--stage-y', `${nextStageY}px`);
+      stageY = nextStageY;
+    }
+  } else if (!visible) return;
   if (phone && appear === 0) { if (!cleared) { renderer.setScissorTest(false); renderer.clear(); cleared = true; lettersEl.style.display = 'none'; } return; }
   cleared = false;
   if (!sized) { renderer.setPixelRatio(dpr); renderer.setSize(SW, SH, false); sized = true; }
@@ -1075,7 +1092,7 @@ function frame(ms) {
   glass.opacity = 0.9 * clamp(appear);
 
   // slides -> a blend of two framings (sp is already eased, and continuous, so the blend is linear)
-  stTop = phone ? 0 : stageEl.getBoundingClientRect().top;     // (a phone's stage is fixed at the top of the screen)
+  stTop = phone ? 0 : stageEl.getBoundingClientRect().top;     // mobile stage is aligned to scrollY
   const sp = motion === 'pan' ? slidePos(phoneY) : 0;
   const FRAMES = phone ? phoneFrames : desktopFrames;
   const i0 = Math.min(Math.floor(sp), FRAMES.length - 1), i1 = Math.min(i0 + 1, FRAMES.length - 1), f = sp - i0;
