@@ -14,12 +14,14 @@
   }, { rootMargin: '0px 0px -6% 0px' });
   const mobile = matchMedia('(width < 860px)');
   let projectObserver;
+  let revealHeight = 0;
   function observeReveals() {
     rvObs.disconnect(); projectObserver?.disconnect();
     document.querySelectorAll('.rv').forEach(el => {
       if (!mobile.matches || !el.matches('.work-sec .item')) rvObs.observe(el);
     });
     if (!mobile.matches) return;
+    revealHeight = document.getElementById('svhProbe').offsetHeight || innerHeight;
     // The bottom 30% is reserved for the anchored molecule. Reveal text only
     // after its leading edge has entered the reading area above the peptide.
     projectObserver = new IntersectionObserver(entries => {
@@ -27,10 +29,13 @@
         e.target.style.transitionDelay = '0ms';
         e.target.classList.toggle('shown', e.isIntersecting);
       }
-    }, { rootMargin: '0px 0px -30% 0px', threshold: 0 });
+    }, { rootMargin: `0px 0px -${Math.round(revealHeight * .30)}px 0px`, threshold: 0 });
     document.querySelectorAll('.work-sec .item.rv').forEach(el => projectObserver.observe(el));
   }
   mobile.addEventListener('change', observeReveals);
+  new ResizeObserver(() => {
+    if (mobile.matches && Math.abs(document.getElementById('svhProbe').offsetHeight - revealHeight) > 1) observeReveals();
+  }).observe(document.getElementById('svhProbe'));
   observeReveals();
 
   // light (Oat) / dark (Kiln)
